@@ -58,7 +58,7 @@ def main(screen, world):
             player.color = 1
             player.original_color = 1
         
-        keyboard_input(inp, player, m, cs, objects, screen)
+        keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_cs)
 
         new_zx = rounds(mapgen.ZONE_LENGTH, player.x)
         new_zy = rounds(mapgen.ZONE_LENGTH, player.y)

@@ -248,23 +248,24 @@ def under_color(c,m):
     u_color = tile[1]
     return u_color
 
-def healing_potion_effect(player,creatures,m, objects):
+def healing_potion_effect(player,creatures,m, objects, global_objects):
     player.hp += 2
     wlib.news.append("you drank a healing potion. glug, glug")
 
-def speed_potion_effect(player,creatures,m, objects):
+def speed_potion_effect(player,creatures,m, objects, global_objects):
     o = filter(lambda x: x.icon != "w", creatures)
     for x in o:
         x.stun_timer = 3
     wlib.news.append("you drank a speed potion. glug, glug")
 
-def invisibility_potion_effect(player, creatures,m, objects):
+def invisibility_potion_effect(player, creatures,m, objects, global_objects):
     player.invisibility_timer = 8
     wlib.news.append("you drank an invisibility potion. glug, glug")
     
-def flower_effect(player, creatures, m, objects):
+def flower_effect(player, creatures, m, objects, global_objects):
     flower = wlib.Object(player.x, player.y, "*", 14, "flower", "that flower smells good" )
     objects.append(flower)
+    global_objects.append(flower)
     wlib.news.append("you planted a flower")
 
 potions = [ ("a healing potion", healing_potion_effect)

@@ -202,7 +202,7 @@ def move_guard(g,player,m,cs,objects):
     attempt_move(g, m, xmod, ymod,cs,objects)
     
         
-def keyboard_input(inp, player, m, cs, objects, screen):
+def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_cs):
     ymod = xmod = 0
     movement = 1
     if inp == curses.KEY_DOWN:
@@ -220,7 +220,7 @@ def keyboard_input(inp, player, m, cs, objects, screen):
     elif inp in map(lambda n: ord(str(n)), range(0, 10)):
         selected_number = inp - 49
         cur_inv = player.inventory.pop(selected_number)
-        cur_inv.effect(player, cs,m, objects)
+        cur_inv.effect(player, cs,m, objects, global_objects)
     elif inp == ord('b'):
         vs_close = list(filter(lambda c: c.icon == "v" and distance(c, player) < 2, cs))
         if vs_close != []:
@@ -237,6 +237,7 @@ def keyboard_input(inp, player, m, cs, objects, screen):
         if player.x == c.x and player.y == c.y and inp == ord('p'):
             news.append("you collected " + c.name)
             objects.remove(c)
+            global_objects.remove(c)
             if c.icon == "$":
                 player.gold += 1
             else:
@@ -247,6 +248,7 @@ def keyboard_input(inp, player, m, cs, objects, screen):
         if player.x == v.x and player.y == v.y and player.mode == "werewolf":
             news.append("You devour the villager...")
             cs.remove(v)
+            global_cs.remove(v)
             body = Object(v.x, v.y, "%", 1, "", "A dead villager. Eeeewwww.")
             objects.append(body)
             loot = choice(v.inventory)
@@ -254,6 +256,7 @@ def keyboard_input(inp, player, m, cs, objects, screen):
             #loot.y = v.y + choice([1,-1])
             loot = spawn_thing(loot, m, v.x - 1, v.x + 1, v.y - 1, v.y + 1)
             objects.append(loot)
+            global_objects.append(loot) 
             for x in range(2):
                 guard = Creature(0, 0, "g", 5, mode="wander")
                 guard = spawn_thing(guard, m)
@@ -261,6 +264,7 @@ def keyboard_input(inp, player, m, cs, objects, screen):
                 coin = Object(0, 0, "$",21, "a coin", "oooh, a coin")
                 coin = spawn_thing(coin, m, player.x - 10, player.x + 10, player.y - 10, player.y + 10)
                 objects.append(coin)
+                global_objects.append(coin)
 
 def wander(c):
     xmod = randint(-1,1)
