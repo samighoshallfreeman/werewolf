@@ -3,18 +3,8 @@ import wlib
 #from wlib import spawn_thing
 import display
 from misc import shuffled, w_h
+from globals import *
 
-CAM_WIDTH = 50
-CAM_HEIGHT = 15
-
-MAP_WIDTH = 1000
-MAP_HEIGHT = 1000
-MAP_AREA = MAP_WIDTH * MAP_HEIGHT
-
-ZONE_LENGTH = 333
-
-NUM_POTIONS = int(MAP_AREA / 500)
-NUM_JUNKS = int(MAP_AREA * 0.001)
 
 class Zone:
     def __init__ (self, type, percg, percv, percp ,l_func):

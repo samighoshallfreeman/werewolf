@@ -1,5 +1,5 @@
 import curses
-from mapgen import MAP_HEIGHT, MAP_WIDTH, CAM_WIDTH, CAM_HEIGHT
+from globals import MAP_HEIGHT, MAP_WIDTH, CAM_WIDTH, CAM_HEIGHT
 from random import randint
 
 tiles = {0: (".",0, True),
@@ -129,4 +129,46 @@ def display_clock(screen, clock):
         x += 1
         sky = "*"
     screen.addstr(12,CAM_WIDTH + x + 2, sky, curses.color_pair(21))
-    
+
+def atlas_tile(sx, sy, w, h, world):
+    worth = {
+    0: 2,
+    1: 5,
+    2: 1,
+    3: 0,
+    4: 2,
+    5: 1,
+    6: 1,
+    7: 1,
+    8: 2,
+    9: 3,}
+    d = {}
+    for y in range(sy, sy + w):
+        for x in range(sx, sx + w):
+            cur_tile = world[y][x]
+            if cur_tile in d:
+                d[cur_tile] += worth[cur_tile]
+            else:
+               d[cur_tile] = worth[cur_tile]
+    return max(d, key=lambda x: d[x])
+test_map = [
+[1,1,2],
+[3,1,1],
+[2,1,1]]
+
+print(atlas_tile(0,0,3,3,test_map))              
+def make_atlas(m, atlas_length):
+    a = []
+    tile_equ = int(MAP_WIDTH / atlas_length)
+    foo = [x * tile_equ for x in range(atlas_length)]
+    for y in foo:
+        row = []
+        for x in foo:
+            row.append(atlas_tile(x, y, tile_equ, tile_equ, m))
+        a.append(row)
+    return a
+            
+
+test_map_big = [[randint(0,9) for x in range(1000)] for y in range(1000)]
+
+print(make_atlas(test_map_big, 9))

@@ -298,22 +298,3 @@ def rounds(space, c):
     l = [x * space for x in range(1000)]
     return l[int(c/space)]
     
-def atlas_tile(sx, sy, w, h, world):
-    d = {}
-    for y in range(sy, sy + w):
-        for x in range(sx, sx + w):
-            cur_tile = world[y][x]
-            if cur_tile in d:
-                d[cur_tile] += 1
-            else:
-               d[cur_tile] = 1
-    return d
-
-test_map = [
-[1,1,2],
-[3,1,1],
-[2,1,1]]
-
-print(atlas_tile(0,0,3,3,test_map))               
-def make_atlas(m, atlas_length):
-    a = []
