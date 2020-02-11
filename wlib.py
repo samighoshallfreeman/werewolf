@@ -294,7 +294,3 @@ def get_local(x,y, global_list):
     box_y = y - mapgen.CAM_HEIGHT
     return list(filter(lambda v: within_box(v, box_x, box_y, box_height, box_width), global_list))
             
-def rounds(space, c):
-    l = [x * space for x in range(1000)]
-    return l[int(c/space)]
-    

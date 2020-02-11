@@ -38,6 +38,8 @@ def main(screen, world):
     
     m, player, global_objects, global_cs = world
     
+    atlas = make_atlas(m, 9)
+    
     zx = rounds(mapgen.ZONE_LENGTH, player.x)
     zy = rounds(mapgen.ZONE_LENGTH, player.y)
     objects = get_local(zx, zy, global_objects)
@@ -99,6 +101,8 @@ def main(screen, world):
         for c in cs:
             if on_cam(c,cam_x,cam_y):
                     screen.addstr(c.y - cam_y, c.x - cam_x, c.icon, curses.color_pair(c.color))
+                    
+        display_atlas(screen, atlas, player)
             
         display_news(screen, news)
      

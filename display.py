@@ -1,6 +1,8 @@
 import curses
 from globals import MAP_HEIGHT, MAP_WIDTH, CAM_WIDTH, CAM_HEIGHT
 from random import randint
+import numpy as np
+from misc import irounds
 
 tiles = {0: (".",0, True),
          1: ("#",2, False),
@@ -133,19 +135,19 @@ def display_clock(screen, clock):
 def atlas_tile(sx, sy, w, h, world):
     worth = {
     0: 2,
-    1: 5,
+    1: 4,
     2: 1,
     3: 0,
     4: 2,
     5: 1,
     6: 1,
     7: 1,
-    8: 2,
+    8: 4,
     9: 3,}
     d = {}
-    for y in range(sy, sy + w):
-        for x in range(sx, sx + w):
-            cur_tile = world[y][x]
+    wslice = np.array(world)[sy: sy + h, sx: sx + w]
+    for y in wslice:
+        for cur_tile in y:
             if cur_tile in d:
                 d[cur_tile] += worth[cur_tile]
             else:
@@ -158,6 +160,7 @@ test_map = [
 
 print(atlas_tile(0,0,3,3,test_map))              
 def make_atlas(m, atlas_length):
+    print("   * generating map")
     a = []
     tile_equ = int(MAP_WIDTH / atlas_length)
     foo = [x * tile_equ for x in range(atlas_length)]
@@ -167,8 +170,14 @@ def make_atlas(m, atlas_length):
             row.append(atlas_tile(x, y, tile_equ, tile_equ, m))
         a.append(row)
     return a
-            
 
-test_map_big = [[randint(0,9) for x in range(1000)] for y in range(1000)]
-
-print(make_atlas(test_map_big, 9))
+def display_atlas(screen, atlas, player):
+    px = irounds(MAP_WIDTH / 9, player.x)
+    py = irounds(MAP_HEIGHT / 9, player.y)
+    screen_height, screen_width = screen.getmaxyx()
+    for y in range(len(atlas)):
+        for x in range(len(atlas)):
+            t = tiles[atlas[y][x]]
+            screen.addstr(2 + y, screen_width - 11 + x, t[0] , curses.color_pair(t[1]))
+    screen.addstr(2 + py, screen_width - 11 + px, player.icon, curses.color_pair(player.color))        
+    

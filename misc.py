@@ -47,3 +47,15 @@ def limit(x,upper,lower):
     else:
         return upper if x > upper else lower
         
+def rounds(space, c):
+    l = [x * space for x in range(1000)]
+    return l[int(c/space)]
+    
+def irounds(space, c):
+    l = [x * space for x in range(1000)]
+    closest = l[int(c/space)]
+    i = 0
+    for foo in l:
+        if closest == foo:
+            return i
+        i += 1
