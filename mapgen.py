@@ -253,7 +253,7 @@ def invisibility_potion_effect(player, creatures,m, objects, global_objects):
     wlib.news.append("you drank an invisibility potion. glug, glug")
     
 def flower_effect(player, creatures, m, objects, global_objects):
-    flower = wlib.Object(player.x, player.y, "*", 14, "flower", "that flower smells good" )
+    flower = wlib.Object(player.x, player.y, "*", 14, "a flower", "that flower smells good" )
     objects.append(flower)
     global_objects.append(flower)
     wlib.news.append("you planted a flower")

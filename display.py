@@ -142,10 +142,10 @@ def atlas_tile(sx, sy, w, h, world):
     5: 1,
     6: 1,
     7: 1,
-    8: 4,
+    8: 3.3,
     9: 3,}
     d = {}
-    wslice = np.array(world)[sy: sy + h, sx: sx + w]
+    wslice = world[sy: sy + h, sx: sx + w]
     for y in wslice:
         for cur_tile in y:
             if cur_tile in d:
@@ -153,21 +153,19 @@ def atlas_tile(sx, sy, w, h, world):
             else:
                d[cur_tile] = worth[cur_tile]
     return max(d, key=lambda x: d[x])
-test_map = [
-[1,1,2],
-[3,1,1],
-[2,1,1]]
 
-print(atlas_tile(0,0,3,3,test_map))              
+
+              
 def make_atlas(m, atlas_length):
-    print("   * generating map")
+    print("    * generating map")
+    sworld = np.array(m)
     a = []
     tile_equ = int(MAP_WIDTH / atlas_length)
     foo = [x * tile_equ for x in range(atlas_length)]
     for y in foo:
         row = []
         for x in foo:
-            row.append(atlas_tile(x, y, tile_equ, tile_equ, m))
+            row.append(atlas_tile(x, y, tile_equ, tile_equ, sworld))
         a.append(row)
     return a
 

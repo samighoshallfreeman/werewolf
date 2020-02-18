@@ -59,3 +59,6 @@ def irounds(space, c):
         if closest == foo:
             return i
         i += 1
+
+def collide(p, c):        
+    return p.x == c.x and p.y == c.y

@@ -24,11 +24,12 @@ def make_world():
     #objects += gen_objects(m)
     coin = Object(randint(1, MAP_WIDTH), randint(1, MAP_HEIGHT), "$", 11, "a coin", "oooh, a coin")
     player = Creature(mapgen.ZONE_LENGTH, mapgen.ZONE_LENGTH, "w", 14, 3, "werewolf")
-    cs += [player]
+    cs += [player]    
+    atlas = make_atlas(m, 9)
     
     news.append("WELCOME TO WEREWOLF")
     
-    return (m, player, objects, cs)
+    return (m, player, objects, cs, atlas)
     
 def main(screen, world):
     clock = 0
@@ -36,9 +37,7 @@ def main(screen, world):
     curses.curs_set(False) # Disable blinking cursor
     init_colors()
     
-    m, player, global_objects, global_cs = world
-    
-    atlas = make_atlas(m, 9)
+    m, player, global_objects, global_cs, atlas = world
     
     zx = rounds(mapgen.ZONE_LENGTH, player.x)
     zy = rounds(mapgen.ZONE_LENGTH, player.y)
@@ -60,7 +59,7 @@ def main(screen, world):
             player.color = 1
             player.original_color = 1
         
-        keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_cs)
+        keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_cs, tiles)
 
         new_zx = rounds(mapgen.ZONE_LENGTH, player.x)
         new_zy = rounds(mapgen.ZONE_LENGTH, player.y)

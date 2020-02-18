@@ -7,6 +7,7 @@ import display
 from misc import *
 from mapgen import *
 import mapgen
+import store
 #import store 
 
 news = []
@@ -202,7 +203,7 @@ def move_guard(g,player,m,cs,objects):
     attempt_move(g, m, xmod, ymod,cs,objects)
     
         
-def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_cs):
+def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_cs, tiles):
     ymod = xmod = 0
     movement = 1
     if inp == curses.KEY_DOWN:
@@ -231,41 +232,17 @@ def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_c
         if vs_close != []:
             merchant = vs_close[0]
             store.buy_sell(screen, merchant, player, merchant.name, "\"Hello, I am %s, can I buy stuff from you.\""% merchant.name, "\"Thanks! Here is your gold\"")
-            
+    elif inp == ord('p'):
+        collision_type(player, ["a coin","a healing potion", "a speed potion", " an invisibilaty potion", "a flower"], objects, objects, global_objects, cs, m, pick_up)       
     attempt_move(player, m, xmod, ymod, cs,objects)
-    for c in filter(lambda o: o.icon in ["$","8", "*"],objects):
-        if player.x == c.x and player.y == c.y and inp == ord('p'):
-            news.append("you collected " + c.name)
-            objects.remove(c)
-            global_objects.remove(c)
-            if c.icon == "$":
-                player.gold += 1
-            else:
-                player.inventory.append(c)
     
-    vs = filter(lambda c: c.icon == "v", cs)
-    for v in vs:
-        if player.x == v.x and player.y == v.y and player.mode == "werewolf":
-            news.append("You devour the villager...")
-            cs.remove(v)
-            global_cs.remove(v)
-            body = Object(v.x, v.y, "%", 1, "", "A dead villager. Eeeewwww.")
-            objects.append(body)
-            loot = choice(v.inventory)
-            #loot.x = v.x + choice([1,-1])
-            #loot.y = v.y + choice([1,-1])
-            loot = spawn_thing(loot, m, v.x - 1, v.x + 1, v.y - 1, v.y + 1)
-            objects.append(loot)
-            global_objects.append(loot) 
-            for x in range(2):
-                guard = Creature(0, 0, "g", 5, mode="wander")
-                guard = spawn_thing(guard, m)
-                cs.append(guard)
-                coin = Object(0, 0, "$",21, "a coin", "oooh, a coin")
-                coin = spawn_thing(coin, m, player.x - 10, player.x + 10, player.y - 10, player.y + 10)
-                objects.append(coin)
-                global_objects.append(coin)
-
+    collision_type(player, ["a trap"], objects, objects, global_objects, cs, m, trap_effect)
+    #vs = filter(lambda c: c.icon == "v", cs)
+    #for v in vs:
+        #if collide(player, v) and player.mode == "werewolf":
+    names = map(lambda x: x.name, filter(lambda x: x.name != "", cs))
+    collision_type(player, names , global_cs, objects, global_objects, cs, m, kill_v)
+     
 def wander(c):
     xmod = randint(-1,1)
     ymod = randint(-1,1)
@@ -283,7 +260,7 @@ def message(screen, x, y, s, color=0):
 
 def within_box(v, b_x, b_y, b_h, b_w):
     if v.x >= b_x and v.y >= b_y:
-        if v.x <= b_w and v.y <= b_h:
+        if v.x <= b_x + b_w and v.y <= b_y + b_h:
             return True
     return False
 
@@ -293,4 +270,62 @@ def get_local(x,y, global_list):
     box_x = x - mapgen.CAM_WIDTH
     box_y = y - mapgen.CAM_HEIGHT
     return list(filter(lambda v: within_box(v, box_x, box_y, box_height, box_width), global_list))
+ 
+def pit_trap_setup(p, m, tiles):
+    t = tiles[m[p.y][p.x]][1]
+    if not mapgen.if_outdoors(t):
+        p.icon = ","
+        p.color = 0
+        
+        
+def collision_type(c, names, collide_list, os, global_objects, cs, world, effect):
+    foo = False
+    
+    for t in filter(lambda x: x.name in names, collide_list):
+        if distance(c,t) < 10:
+            news.append("player: %s" % (str(c)))
+            news.append("%s %d %d" % (t.name, t.x, t.y))
+        if collide(c, t):
+            if foo == False:
+                news.append("yayaya")
+                foo = True        
+            effect(t, c, os, global_objects, world, cs)
             
+def trap_effect(t, player, objects, global_objects, world, cs):
+    news.append("ahhhhh! you got stuck in a trap")
+    player.hp -= 1
+    objects.remove(t)
+    global_objects.remove(t)
+    
+def pick_up(t, player, objects, global_objects, world, cs):
+    news.append("you collected " + t.name)
+    objects.remove(t)
+    global_objects.remove(t)
+    if t.icon == "$":
+        player.gold += 1
+    else:
+        player.inventory.append(t)
+        
+def kill_v(v, player, objects, global_objects, world, cs):
+    news.append("You devour the villager...")
+    cs.remove(v)
+    global_cs.remove(v)
+    body = Object(v.x, v.y, "%", 1, "", "A dead villager. Eeeewwww.")
+    objects.append(body)
+    loot = choice(v.inventory)
+    loot = spawn_thing(loot, m, v.x - 1, v.x + 1, v.y - 1, v.y + 1)
+    objects.append(loot)
+    global_objects.append(loot) 
+    for x in range(2):
+        guard = Creature(0, 0, "g", 5, mode="wander")
+        guard = spawn_thing(guard, m, player.x - 30, player.x + 30, player.y - 30, player.y + 30)
+        cs.append(guard)
+        coin = Object(0, 0, "$",21, "a coin", "oooh, a coin")
+        coin = spawn_thing(coin, m, player.x - 10, player.x + 10, player.y - 10, player.y + 10)
+        objects.append(coin)
+        global_objects.append(coin)
+        trap = Object(0, 0, "'", 3, "a trap", "it's a trap!")
+        trap = spawn_thing(trap, m, player.x - 10, player.x + 10, player.y - 10, player.y + 10)
+        pit_trap_setup(trap, m, tiles)
+        objects.append(trap)
+        global_objects.append(trap)
