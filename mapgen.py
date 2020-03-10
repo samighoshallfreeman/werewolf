@@ -1,9 +1,13 @@
-from random import randint, choice
+from random import randint, choice, random
 import wlib
 #from wlib import spawn_thing
+from typing import List
+import numpy as np
+
 import display
 from misc import shuffled, w_h
 from globals import *
+from items import items, flower_effect
 
 
 class Zone:
@@ -48,7 +52,47 @@ def mountains(m, startx, starty , endx, endy, objects):
     for cur_dig in [gd1, gd2, gd3, gd4]:
         stamp(0, 0, cur_dig, test_dig, 6)
     stamp(startx, starty, test_dig, m)
-        
+
+def ocean(m, startx, starty , endx, endy, objects):
+    print("    *   generating ocean....")
+    s = [[10 for x in range(startx + 1,ZONE_LENGTH - 2)] for y in range(starty + 1, ZONE_LENGTH - 2)]
+    w = [[4 for x in range(startx + 2, ZONE_LENGTH - 4)] for y in range(starty + 2, ZONE_LENGTH - 4)]
+    stamp(0, 0, w, s)
+    for x in range(20):
+        automata(s, 10)
+    stamp(startx, starty, s, m)
+    zone = np.array(m)[starty:endy, startx:endx]
+    
+    for x in range(5):
+        automata(zone, 2)
+    stamp(startx, starty, zone, m)
+    
+def automata(zone: List[List[int]], friend: int) -> List[List[int]]:
+    weights = [0.00, 0.1, 0.2, 0.3, 0.4]
+    for y in range(ZONE_LENGTH):
+        for x in range(ZONE_LENGTH):
+            num = num_neighbors(zone, x, y, friend)
+            weight = weights[num]
+            r = random()
+            if r < weight:
+                try:
+                    zone[y][x] = friend
+                except:
+                    pass
+                            
+def num_neighbors(m: List[List[int]], x: int, y: int, tile_num: int) -> int:
+    ints = [(y, x + 1), (y, x - 1), (y + 1, x), (y - 1, x)]
+    num = 0
+    for t in ints:
+        ty,tx = t
+        try:
+            if m[ty][tx] == tile_num:
+                num += 1
+        except:
+            pass
+    return num
+    
+            
 class Digger:
     pass
     
@@ -171,10 +215,10 @@ def spawn_villagers(m, cs, z, startx, endx, starty, endy):
         wlib.spawn_thing(villager, m, startx, endx, starty, endy)
         r_i = []
         for x in range(3):
-            p, effect = choice(potions)
-            potion = wlib.Object(0, 0, "8", 13, p, p, randint(4,6))
-            potion.effect = effect
-            r_i.append(potion)
+            i, effect, icon, color = choice(items)
+            item = wlib.Object(0, 0, icon, color, i, i, randint(4,6))
+            item.effect = effect
+            r_i.append(item)
         villager.name = choice(["Gerald", "Sathy", "Randy", "Joshua"])
         villager.inventory = r_i
         cs.append(villager)
@@ -192,7 +236,7 @@ def building_zone(m, startx, starty , endx, endy, building_divider, minwidth, mi
             stamp_building(building_x, building_y, building, m)
     
 zones = [
-    Zone("mountains", 0.0002, 0.001, 0.003, plains),
+    Zone("mountains", 0.001, 0.00, 0.00, plains,),#213
     Zone("village", 0.001, 0.005, 0.001, village),
     Zone("plains", 0.0006, 0.003, 0.001, plains),
     Zone("forest", 0.0003, 0.0015, 0.004, forest),
@@ -238,31 +282,6 @@ def under_color(c,m):
     u_color = tile[1]
     return u_color
 
-def healing_potion_effect(player,creatures,m, objects, global_objects):
-    player.hp += 2
-    wlib.news.append("you drank a healing potion. glug, glug")
-
-def speed_potion_effect(player,creatures,m, objects, global_objects):
-    o = filter(lambda x: x.icon != "w", creatures)
-    for x in o:
-        x.stun_timer = 3
-    wlib.news.append("you drank a speed potion. glug, glug")
-
-def invisibility_potion_effect(player, creatures,m, objects, global_objects):
-    player.invisibility_timer = 8
-    wlib.news.append("you drank an invisibility potion. glug, glug")
-    
-def flower_effect(player, creatures, m, objects, global_objects):
-    flower = wlib.Object(player.x, player.y, "*", 14, "a flower", "that flower smells good" )
-    objects.append(flower)
-    global_objects.append(flower)
-    wlib.news.append("you planted a flower")
-
-potions = [ ("a healing potion", healing_potion_effect)
-          , ("a speed potion", speed_potion_effect)
-          , ("an invisibilaty potion", invisibility_potion_effect)
-          ]
-
 def gen_flowers(m, startx, starty, num):
     print("    * generating flowers...")
     flowers = []
@@ -274,15 +293,14 @@ def gen_flowers(m, startx, starty, num):
         if if_outdoors(display.tiles[f_spot][0]):
             flowers.append(flower)
     return flowers
-        
-        
+                
 def gen_objects(m, z, startx, endx, starty, endy):
     print("    * generating objects...")
     objectz = []
-    print("    *    potions...")
+    print("    *    items...")
     for x in range(int(ZONE_LENGTH * ZONE_LENGTH * z.perc_p)):
-        p, effect = choice(potions)
-        potion = wlib.Object(0, 0, "8", 13, p, p, randint(4, 6))
+        p, effect, icon, color = choice(items)
+        potion = wlib.Object(0, 0, icon, color, p, p, randint(4, 6))
         potion.effect = effect
         potion = wlib.spawn_thing(potion, m)
 

@@ -8,9 +8,8 @@ from misc import *
 from mapgen import *
 import mapgen
 import store
+from globals import news
 #import store 
-
-news = []
 
 class Creature:
     def __init__(self, x, y, icon, color, hp=0, mode="", gold=10):
@@ -29,6 +28,7 @@ class Creature:
         self.max_hp = hp
         self.gold = gold
         self.name = ""
+        self.hp_limit = 5
 
 class Object:
     def __init__(self, x, y, icon, color, name = "", description = "", cost=0):
@@ -38,7 +38,7 @@ class Object:
         self.description = description
         self.color = color
         self.name = name
-        self.effect = lambda x, y, z, foo: None
+        self.effect = lambda x, y, z, foo, bar, a, gc: None
         self.cost = cost
         
 def spawn_thing(c, m, startx=0, endx=1000, starty=0, endy=1000):
@@ -94,7 +94,7 @@ assert(no_objects_between(test_c, test_t, test_os, True, False) == True)
 def can_see(m, c, t ,os):
     def is_visible_(m, n1, n2, f):
     
-        open_tiles = [0,2,3,4,7]
+        open_tiles = [0,2,3,4,7,10]
         #open_tiles = filter(lambda tt: tiles[tt][2], tiles)
         visible = lambda l: len(set(l) - set(open_tiles)) == 0
 
@@ -129,7 +129,11 @@ def attempt_move(c, m, xmod, ymod, cs,objects):
         elif c.icon == "p":
             return
     else:
-        if m[ny][nx] in(1, 6, 8) :
+        if c.icon == "^":
+            blocks = (0, 1, 2, 3, 5, 6, 7, 8, 9, 10)
+        else:
+            blocks = (1, 6, 8)
+        if m[ny][nx] in blocks:
             if c.icon != "w":
                 xmod, ymod = get_new_mods(xmod, ymod)
             else:
@@ -205,7 +209,7 @@ def move_guard(g,player,m,cs,objects):
         
 def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_cs, tiles):
     ymod = xmod = 0
-    movement = 1
+    movement = 1    
     if inp == curses.KEY_DOWN:
         ymod = movement
     elif inp == curses.KEY_UP:
@@ -216,12 +220,11 @@ def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_c
         xmod = movement
     elif inp == curses.KEY_END:        
         for o in filter(lambda o: int(distance(player,o)) < 2, objects):
-                news.append(o.description)
-                
+                news.append(o.description)            
     elif inp in map(lambda n: ord(str(n)), range(0, 10)):
         selected_number = inp - 49
         cur_inv = player.inventory.pop(selected_number)
-        cur_inv.effect(player, cs,m, objects, global_objects)
+        cur_inv.effect(player, cs, m, objects, global_objects, screen, global_cs)
     elif inp == ord('b'):
         vs_close = list(filter(lambda c: c.icon == "v" and distance(c, player) < 2, cs))
         if vs_close != []:
@@ -233,15 +236,18 @@ def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_c
             merchant = vs_close[0]
             store.buy_sell(screen, merchant, player, merchant.name, "\"Hello, I am %s, can I buy stuff from you.\""% merchant.name, "\"Thanks! Here is your gold\"")
     elif inp == ord('p'):
-        collision_type(player, ["a coin","a healing potion", "a speed potion", " an invisibilaty potion", "a flower"], objects, objects, global_objects, cs, m, pick_up)       
-    attempt_move(player, m, xmod, ymod, cs,objects)
-    
-    collision_type(player, ["a trap"], objects, objects, global_objects, cs, m, trap_effect)
-    #vs = filter(lambda c: c.icon == "v", cs)
-    #for v in vs:
-        #if collide(player, v) and player.mode == "werewolf":
-    names = map(lambda x: x.name, filter(lambda x: x.name != "", cs))
-    collision_type(player, names , global_cs, objects, global_objects, cs, m, kill_v)
+        collision_type(player, list(map(lambda x: x[0], items)) + ["a coin", "a flower"], objects, objects, global_objects, cs, global_cs, m, pick_up)
+    elif inp == ord('g'):
+        player.gold += 10
+        trap = Object(player.x, player.y, "'", 3, "a trap", "it's a trap!")
+        objects.append(trap)
+        global_objects.append(trap)
+    if player.stun_timer == 0:
+        attempt_move(player, m, xmod, ymod, cs,objects)
+    collision_type(player, ["a trap"], objects, objects, global_objects, cs, global_cs, m, trap_effect)
+    names = list(map(lambda x: x.name, filter(lambda x: x.name != "", cs)))
+    if player.mode == "werewolf":
+        collision_type(player, names , global_cs, objects, global_objects, cs, global_cs, m, kill_v)
      
 def wander(c):
     xmod = randint(-1,1)
@@ -272,32 +278,27 @@ def get_local(x,y, global_list):
     return list(filter(lambda v: within_box(v, box_x, box_y, box_height, box_width), global_list))
  
 def pit_trap_setup(p, m, tiles):
-    t = tiles[m[p.y][p.x]][1]
+    t = tiles[m[p.y][p.x]][0]
+    print(t)
     if not mapgen.if_outdoors(t):
-        p.icon = ","
-        p.color = 0
+        p.icon = "."
+        p.color = 2
         
-        
-def collision_type(c, names, collide_list, os, global_objects, cs, world, effect):
-    foo = False
-    
+def collision_type(c, names, collide_list, os, global_objects, cs, global_cs, world, effect):
     for t in filter(lambda x: x.name in names, collide_list):
-        if distance(c,t) < 10:
-            news.append("player: %s" % (str(c)))
-            news.append("%s %d %d" % (t.name, t.x, t.y))
-        if collide(c, t):
-            if foo == False:
-                news.append("yayaya")
-                foo = True        
-            effect(t, c, os, global_objects, world, cs)
+        if collide(c, t):       
+            effect(t, c, os, global_objects, world, cs, global_cs)
             
-def trap_effect(t, player, objects, global_objects, world, cs):
+            
+def trap_effect(t, player, objects, global_objects, world, cs, global_cs):
     news.append("ahhhhh! you got stuck in a trap")
     player.hp -= 1
     objects.remove(t)
     global_objects.remove(t)
+    player.stun_timer = randint(2, 4)
     
-def pick_up(t, player, objects, global_objects, world, cs):
+    
+def pick_up(t, player, objects, global_objects, world, cs, global_cs):
     news.append("you collected " + t.name)
     objects.remove(t)
     global_objects.remove(t)
@@ -306,7 +307,7 @@ def pick_up(t, player, objects, global_objects, world, cs):
     else:
         player.inventory.append(t)
         
-def kill_v(v, player, objects, global_objects, world, cs):
+def kill_v(v, player, objects, global_objects, m, cs, global_cs):
     news.append("You devour the villager...")
     cs.remove(v)
     global_cs.remove(v)
@@ -329,3 +330,13 @@ def kill_v(v, player, objects, global_objects, world, cs):
         pit_trap_setup(trap, m, tiles)
         objects.append(trap)
         global_objects.append(trap)
+        
+def shark(map, creatures):
+    for x in creatures:
+        if x.icon == "g" and under_color(x, map) == 12:
+            x.icon = "^"
+                    
+def swim(map, player):
+    if map[player.x][player.y] == 4 and player.stun_timer == 0:
+        player.stun_timer = 2
+        

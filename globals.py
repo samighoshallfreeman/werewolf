@@ -9,3 +9,5 @@ ZONE_LENGTH = 333
 
 NUM_POTIONS = int(MAP_AREA / 500)
 NUM_JUNKS = int(MAP_AREA * 0.001)
+
+news = []

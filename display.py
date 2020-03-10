@@ -13,7 +13,9 @@ tiles = {0: (".",0, True),
          6: ("O",7, False),
          7: ("o",8, True),
          8: ("o",2, False),
-         9: ("*",14, True)}
+         9: ("*",14, True),
+         10: (":",21, True)}#░
+
          
 def display_news(screen, news):
     top_news = news[-5:]
@@ -109,9 +111,10 @@ def draw_map(screen, tiles, m, cx, cy):
                     cur_tile = tiles[cur_tile_num][0]
                     screen.addstr(row, column, cur_tile, curses.color_pair(tiles[cur_tile_num][1]))
 
-def display_hp(screen, hp):
-    s = "+" * hp
-    screen.addstr(14, CAM_WIDTH + 1, "        +++++",curses.color_pair(9))
+def display_hp(screen, p):
+    s = "+" * p.hp
+    h = "+" * p.hp_limit
+    screen.addstr(14, CAM_WIDTH + 1, "        " + h,curses.color_pair(9))
     screen.addstr(14, CAM_WIDTH + 1, "health: " + s, curses.color_pair(14))
     
 def display_inv(screen, inventory):
@@ -143,7 +146,8 @@ def atlas_tile(sx, sy, w, h, world):
     6: 1,
     7: 1,
     8: 3.3,
-    9: 3,}
+    9: 3,
+    10: 1}
     d = {}
     wslice = world[sy: sy + h, sx: sx + w]
     for y in wslice:

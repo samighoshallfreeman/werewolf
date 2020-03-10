@@ -5,8 +5,10 @@ import wlib
 from random import randint, choice
 
 from display import *
-from mapgen import village, gen_objects, build_world, potions, under_color
+from mapgen import village, gen_objects, build_world, items, under_color
 import mapgen
+from globals import news
+from items import make_item
 
 
 def on_cam(t, cam_x, cam_y):
@@ -24,6 +26,8 @@ def make_world():
     #objects += gen_objects(m)
     coin = Object(randint(1, MAP_WIDTH), randint(1, MAP_HEIGHT), "$", 11, "a coin", "oooh, a coin")
     player = Creature(mapgen.ZONE_LENGTH, mapgen.ZONE_LENGTH, "w", 14, 3, "werewolf")
+    player.inventory = [ make_item("a bow"), make_item("an arrow")]
+                         
     cs += [player]    
     atlas = make_atlas(m, 9)
     
@@ -38,6 +42,7 @@ def main(screen, world):
     init_colors()
     
     m, player, global_objects, global_cs, atlas = world
+    shark(m, global_cs)
     
     zx = rounds(mapgen.ZONE_LENGTH, player.x)
     zy = rounds(mapgen.ZONE_LENGTH, player.y)
@@ -46,7 +51,7 @@ def main(screen, world):
     
     while(inp != 113): # Quit game if player presses "q"
         screen.clear()
-        if clock <= 300:
+        if clock <= 200:
             display.night_colors()
             player.mode = "werewolf"
             player.icon = "w"
@@ -60,6 +65,9 @@ def main(screen, world):
             player.original_color = 1
         
         keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_cs, tiles)
+        
+        if player.stun_timer == 0:    
+            swim(m,player)
 
         new_zx = rounds(mapgen.ZONE_LENGTH, player.x)
         new_zy = rounds(mapgen.ZONE_LENGTH, player.y)
@@ -81,11 +89,12 @@ def main(screen, world):
             if c.stun_timer == 0 and distance(c, player) <= CAM_WIDTH:
                 if c.icon == "v":
                     move_villager(c,player,m,cs,objects)
-                elif c.icon == "g":
+                elif c.icon in ("g","^"):
                     move_guard(c,player,m,cs,objects)
 
             if c.stun_timer != 0:
                 c.stun_timer -= 1
+                
 
             if c.invisibility_timer != 0:
                 c.invisibility_timer -= 1
@@ -107,7 +116,7 @@ def main(screen, world):
      
         display_inv(screen, player.inventory)
         
-        display_hp(screen, player.hp)
+        display_hp(screen, player)
 
         screen.addstr(13, CAM_WIDTH + 1, "gold: " + str(player.gold), curses.color_pair(21))
         
@@ -122,7 +131,7 @@ def main(screen, world):
         if inp == ord('x'):
             clock += 100
         
-        if clock >= 600:
+        if clock >= 400:
             clock = 0
             
 
@@ -132,8 +141,8 @@ inventory = []
 player = Creature(ZONE_LENGTH, ZONE_LENGTH, "w", 14, 3, "werewolf")
 merchant = Creature(ZONE_LENGTH, ZONE_LENGTH, "w", 14, 3, "werewolf")
 for x in range(3):
-    p, effect = choice(potions)
-    potion = wlib.Object(0, 0, "8", 13, p, p, 5)
+    p, effect, icon, color = choice(items)
+    potion = wlib.Object(0, 0, icon, color, p, p, 5)
     potion.effect = effect
     merchant.inventory.append(potion)
 
