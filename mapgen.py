@@ -8,6 +8,7 @@ import display
 from misc import shuffled, w_h
 from globals import *
 from items import items, flower_effect
+import pickle
 
 
 class Zone:
@@ -215,9 +216,10 @@ def spawn_villagers(m, cs, z, startx, endx, starty, endy):
         wlib.spawn_thing(villager, m, startx, endx, starty, endy)
         r_i = []
         for x in range(3):
-            i, effect, icon, color = choice(items)
+            i = choice(list(items.keys()))
+            effect, icon, color = items[i]
             item = wlib.Object(0, 0, icon, color, i, i, randint(4,6))
-            item.effect = effect
+            #item.effect = effect
             r_i.append(item)
         villager.name = choice(["Gerald", "Sathy", "Randy", "Joshua"])
         villager.inventory = r_i
@@ -287,7 +289,7 @@ def gen_flowers(m, startx, starty, num):
     flowers = []
     for x in range(num):
         flower = wlib.Object(0, 0, "*", 14, "a flower", "that flower smells good", 1)
-        flower.effect = flower_effect
+        #flower.effect = flower_effect
         flower = wlib.spawn_thing(flower, m, startx, startx + ZONE_LENGTH, starty, starty + ZONE_LENGTH)
         f_spot = m[flower.y][flower.x]
         if if_outdoors(display.tiles[f_spot][0]):
@@ -299,9 +301,10 @@ def gen_objects(m, z, startx, endx, starty, endy):
     objectz = []
     print("    *    items...")
     for x in range(int(ZONE_LENGTH * ZONE_LENGTH * z.perc_p)):
-        p, effect, icon, color = choice(items)
-        potion = wlib.Object(0, 0, icon, color, p, p, randint(4, 6))
-        potion.effect = effect
+        i = choice(list(items.keys()))
+        effect, icon, color = items[i]
+        potion = wlib.Object(0, 0, icon, color, i, i, randint(4, 6))
+        #potion.effect = effect
         potion = wlib.spawn_thing(potion, m)
 
         objectz.append(potion)

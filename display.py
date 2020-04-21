@@ -3,6 +3,7 @@ from globals import MAP_HEIGHT, MAP_WIDTH, CAM_WIDTH, CAM_HEIGHT
 from random import randint
 import numpy as np
 from misc import irounds
+import globals
 
 tiles = {0: (".",0, True),
          1: ("#",2, False),
@@ -100,6 +101,20 @@ def init_colors(mod=0):
     curses.init_pair(12, curses.COLOR_BLUE, curses.COLOR_BLACK)
     curses.init_pair(20, 20, curses.COLOR_BLACK)
     
+def change_colors(player, clock):
+    if clock <= 200:
+        night_colors()
+        player.mode = "werewolf"
+        player.icon = "w"
+        player.color = 14
+        player.original_color = 14
+    else:
+        day_colors()
+        player.mode = "human"
+        player.icon = "@"
+        player.color = 1
+        player.original_color = 1
+    
 def draw_map(screen, tiles, m, cx, cy):
     for row in range(CAM_HEIGHT):
         for column in range(CAM_WIDTH):
@@ -110,7 +125,14 @@ def draw_map(screen, tiles, m, cx, cy):
                     cur_tile_num = m[vcy][vcx]
                     cur_tile = tiles[cur_tile_num][0]
                     screen.addstr(row, column, cur_tile, curses.color_pair(tiles[cur_tile_num][1]))
+                    
+def display_hunger(screen, p):
+    s = "Q" * int(p.fullness/10) 
+    screen.addstr(10, CAM_WIDTH + 1, "fullness: " + s, curses.color_pair(2))
 
+def display_time_alive(screen):
+    screen.addstr(11,CAM_WIDTH + 1, "time alive: " + str(globals.time_alive))
+    
 def display_hp(screen, p):
     s = "+" * p.hp
     h = "+" * p.hp_limit
@@ -125,15 +147,37 @@ def display_inv(screen, inventory):
         screen.addstr(ci, CAM_WIDTH + 4, i.icon, curses.color_pair(i.color))
         screen.addstr(ci, CAM_WIDTH + 5, ": " + i.name, curses.color_pair(0))
         ci += 1
+        
 def display_clock(screen, clock):
     screen.addstr(12,CAM_WIDTH + 1, "[-----|-----]")
-    x = int(clock/60)
-    if clock <= 300:
+    x = int(clock/40)
+    if clock <= 200:
         sky = "o"
     else:
         x += 1
         sky = "*"
     screen.addstr(12,CAM_WIDTH + x + 2, sky, curses.color_pair(21))
+    
+def display_death(screen, highscores):
+    if globals.death != "you quit": 
+        screen.addstr(1, 1, "GAME OVER", curses.color_pair(14))
+        screen.addstr(2, 1, globals.death, curses.color_pair(14))
+    x = 6
+    for s in highscores:
+        name, death, time, gold = s
+        screen.addstr(4, 4, "name")
+        screen.addstr(4, 12, "gold")
+        screen.addstr(4, 20, "time_alive")
+        screen.addstr(4, 34, "death")
+        screen.addstr(x, 4, name)
+        screen.addstr(x, 12, str(gold))
+        screen.addstr(x, 20, str(time))
+        screen.addstr(x, 34, death)  
+        x += 1
+        
+    screen.addstr(3, 1, "High scores:")
+    screen.refresh()
+    inp = screen.getch()
 
 def atlas_tile(sx, sy, w, h, world):
     worth = {
@@ -158,8 +202,6 @@ def atlas_tile(sx, sy, w, h, world):
                d[cur_tile] = worth[cur_tile]
     return max(d, key=lambda x: d[x])
 
-
-              
 def make_atlas(m, atlas_length):
     print("    * generating map")
     sworld = np.array(m)
@@ -181,5 +223,25 @@ def display_atlas(screen, atlas, player):
         for x in range(len(atlas)):
             t = tiles[atlas[y][x]]
             screen.addstr(2 + y, screen_width - 11 + x, t[0] , curses.color_pair(t[1]))
-    screen.addstr(2 + py, screen_width - 11 + px, player.icon, curses.color_pair(player.color))        
+    screen.addstr(2 + py, screen_width - 11 + px, player.icon, curses.color_pair(player.color)) 
+
+def on_cam(t, cam_x, cam_y):
+    if t.x < cam_x + CAM_WIDTH and t.y < cam_y + CAM_HEIGHT:
+        if t.x > cam_x and t.y > cam_y:
+            return True
+    return False
+    
+def display_calls(screen, atlas, player, news, clock, cs, cam_x, cam_y):
+    for c in cs:
+        if on_cam(c, cam_x, cam_y):
+            screen.addstr(c.y - cam_y, c.x - cam_x, c.icon, curses.color_pair(c.color))
+                    
+    display_atlas(screen, atlas, player)
+    display_news(screen, news)
+    display_inv(screen, player.inventory)
+    display_hp(screen, player)
+    display_hunger(screen, player)
+    screen.addstr(13, CAM_WIDTH + 1, "gold: " + str(player.gold), curses.color_pair(21))
+    display_clock(screen, clock)
+    display_time_alive(screen)
     

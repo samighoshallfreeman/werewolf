@@ -9,7 +9,9 @@ from mapgen import *
 import mapgen
 import store
 from globals import news
-#import store 
+import globals
+import pickle
+import items
 
 class Creature:
     def __init__(self, x, y, icon, color, hp=0, mode="", gold=10):
@@ -29,6 +31,7 @@ class Creature:
         self.gold = gold
         self.name = ""
         self.hp_limit = 5
+        self.fullness = 100.0
 
 class Object:
     def __init__(self, x, y, icon, color, name = "", description = "", cost=0):
@@ -38,9 +41,21 @@ class Object:
         self.description = description
         self.color = color
         self.name = name
-        self.effect = lambda x, y, z, foo, bar, a, gc: None
+        #self.effect = lambda x, y, z, foo, bar, a, gc: None
         self.cost = cost
+        self.hp = 1 
         
+def write(l, name):
+    f = open(name, "wb")
+    pickle.dump(l,f)
+    f.close()
+    
+def read(name):
+    f = open(name, "rb")
+    l = pickle.load(f)
+    f.close()
+    return l
+
 def spawn_thing(c, m, startx=0, endx=1000, starty=0, endy=1000):
     c.x = randint(startx, endx - 1)
     c.y = randint(starty, endy- 1)
@@ -196,8 +211,15 @@ def move_guard(g,player,m,cs,objects):
         if can_see(m, g, player,objects):
             g.target = (player.x,player.y)
         if distance(player,g) == 1.0: #xmod + g.x == player.x and ymod + g.y == player.y:
-            news.append("ya got hit")
-            player.hp -= 1
+            sheilds = list(filter(lambda x: x.icon == "]", player.inventory))
+            if sheilds != [] and randint(1, 3) == 1:
+                news.append("ya got hit but your sheild blocked it")
+                sheilds[0].hp -= 1
+            else:
+                player.hp -= 1
+                if player.hp <= 0:
+                    globals.death = "dat guard dun gocha. -> g"
+                news.append("ya got hit")
             xmod = 0
             ymod = 0
 
@@ -207,7 +229,7 @@ def move_guard(g,player,m,cs,objects):
     attempt_move(g, m, xmod, ymod,cs,objects)
     
         
-def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_cs, tiles):
+def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_cs, tiles, atlas):
     ymod = xmod = 0
     movement = 1    
     if inp == curses.KEY_DOWN:
@@ -218,13 +240,19 @@ def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_c
         xmod = -movement
     elif inp == curses.KEY_RIGHT:        
         xmod = movement
-    elif inp == curses.KEY_END:        
+    elif inp == 10:
         for o in filter(lambda o: int(distance(player,o)) < 2, objects):
-                news.append(o.description)            
+                news.append(o.description)
+    elif inp == ord('q'):
+        world = (m, player, global_objects, global_cs, atlas, globals.time_alive, globals.news)
+        write(world, "world")
+        player.hp = 0
+        globals.death = "you quit"
     elif inp in map(lambda n: ord(str(n)), range(0, 10)):
         selected_number = inp - 49
         cur_inv = player.inventory.pop(selected_number)
-        cur_inv.effect(player, cs, m, objects, global_objects, screen, global_cs)
+        effect = items.items[cur_inv.name][0]
+        effect(player, cs, m, objects, global_objects, screen, global_cs)
     elif inp == ord('b'):
         vs_close = list(filter(lambda c: c.icon == "v" and distance(c, player) < 2, cs))
         if vs_close != []:
@@ -236,7 +264,7 @@ def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_c
             merchant = vs_close[0]
             store.buy_sell(screen, merchant, player, merchant.name, "\"Hello, I am %s, can I buy stuff from you.\""% merchant.name, "\"Thanks! Here is your gold\"")
     elif inp == ord('p'):
-        collision_type(player, list(map(lambda x: x[0], items)) + ["a coin", "a flower"], objects, objects, global_objects, cs, global_cs, m, pick_up)
+        collision_type(player, list(items.items.keys()) + ["a coin", "a flower"], objects, objects, global_objects, cs, global_cs, m, pick_up)
     elif inp == ord('g'):
         player.gold += 10
         trap = Object(player.x, player.y, "'", 3, "a trap", "it's a trap!")
@@ -248,6 +276,7 @@ def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_c
     names = list(map(lambda x: x.name, filter(lambda x: x.name != "", cs)))
     if player.mode == "werewolf":
         collision_type(player, names , global_cs, objects, global_objects, cs, global_cs, m, kill_v)
+    globals.time_alive += 1
      
 def wander(c):
     xmod = randint(-1,1)
@@ -287,16 +316,16 @@ def pit_trap_setup(p, m, tiles):
 def collision_type(c, names, collide_list, os, global_objects, cs, global_cs, world, effect):
     for t in filter(lambda x: x.name in names, collide_list):
         if collide(c, t):       
-            effect(t, c, os, global_objects, world, cs, global_cs)
-            
+            effect(t, c, os, global_objects, world, cs, global_cs)        
             
 def trap_effect(t, player, objects, global_objects, world, cs, global_cs):
     news.append("ahhhhh! you got stuck in a trap")
     player.hp -= 1
+    if player.hp <= 0:
+        globals.death = "you were killed in a trap"
     objects.remove(t)
     global_objects.remove(t)
     player.stun_timer = randint(2, 4)
-    
     
 def pick_up(t, player, objects, global_objects, world, cs, global_cs):
     news.append("you collected " + t.name)
@@ -311,6 +340,7 @@ def kill_v(v, player, objects, global_objects, m, cs, global_cs):
     news.append("You devour the villager...")
     cs.remove(v)
     global_cs.remove(v)
+    player.fullness += 30.0
     body = Object(v.x, v.y, "%", 1, "", "A dead villager. Eeeewwww.")
     objects.append(body)
     loot = choice(v.inventory)
@@ -339,4 +369,20 @@ def shark(map, creatures):
 def swim(map, player):
     if map[player.x][player.y] == 4 and player.stun_timer == 0:
         player.stun_timer = 2
-        
+
+def stuff_breaks(player):
+    for x in list(map(lambda x: x.name, filter(lambda x: x.hp == 0, player.inventory))):
+        news.append("%s of your's broke!"% x)
+    player.inventory = list(filter(lambda x: x.hp != 0, player.inventory))
+
+def die(m, player, global_objects, global_cs, atlas, screen, highscores):
+    world = (m, player, global_objects, global_cs, atlas, globals.time_alive, globals.news)
+    if globals.death != "you quit":
+        write(world, "world")
+        highscores.append(("sam", globals.death, globals.time_alive, player.gold))
+    screen.clear()
+    highscores.sort(key=lambda x: x[2])
+    highscores.reverse()
+    highscores = highscores[:10]
+    display_death(screen, highscores)
+    write(highscores, "highscores")

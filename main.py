@@ -3,19 +3,13 @@ import store
 from wlib import *
 import wlib
 from random import randint, choice
-
 from display import *
 from mapgen import village, gen_objects, build_world, items, under_color
 import mapgen
 from globals import news
+import globals
 from items import make_item
 
-
-def on_cam(t, cam_x, cam_y):
-    if t.x < cam_x + CAM_WIDTH and t.y < cam_y + CAM_HEIGHT:
-        if t.x > cam_x and t.y > cam_y:
-            return True
-    return False
     
 def make_world():
     m = [[2 for x in range(MAP_WIDTH)] for y in range(MAP_HEIGHT)]
@@ -26,49 +20,52 @@ def make_world():
     #objects += gen_objects(m)
     coin = Object(randint(1, MAP_WIDTH), randint(1, MAP_HEIGHT), "$", 11, "a coin", "oooh, a coin")
     player = Creature(mapgen.ZONE_LENGTH, mapgen.ZONE_LENGTH, "w", 14, 3, "werewolf")
-    player.inventory = [ make_item("a bow"), make_item("an arrow")]
-                         
-    cs += [player]    
+    player.inventory = [make_item("an apple")]
+    cs += [player]
+    
     atlas = make_atlas(m, 9)
     
     news.append("WELCOME TO WEREWOLF")
     
-    return (m, player, objects, cs, atlas)
-    
-def main(screen, world):
+    return (m, player, objects, cs, atlas, 0, [])
+
+def initialize(screen, world):
+    highscores = read("highscores")
     clock = 0
     inp = 0 
     curses.curs_set(False) # Disable blinking cursor
     init_colors()
     
-    m, player, global_objects, global_cs, atlas = world
+    m, player, global_objects, global_cs, atlas, globals.time_alive, globals.news = world
     shark(m, global_cs)
+    if player.hp <= 0:
+        for x in filter(lambda c: c.icon == "w" and c.hp <= 0, global_cs): 
+            corpse = Object(x.x, x.y, "%", 14, "a werewolf corpse", "eww a dead werewolf")
+            global_objects.append(corpse)
+            global_cs.remove(x)
+        player = Creature(mapgen.ZONE_LENGTH, mapgen.ZONE_LENGTH, "w", 14, 3, "werewolf")
+        player.inventory = [make_item("an apple")]
+        global_cs += [player]
     
     zx = rounds(mapgen.ZONE_LENGTH, player.x)
     zy = rounds(mapgen.ZONE_LENGTH, player.y)
     objects = get_local(zx, zy, global_objects)
-    cs = get_local(zx, zy, global_cs)    
-    
-    while(inp != 113): # Quit game if player presses "q"
+    cs = get_local(zx, zy, global_cs)
+    world = (m, player, global_objects, global_cs, atlas, globals.time_alive, globals.news)
+    return world, clock, inp, zx, zy, cs, objects, highscores 
+
+def main(screen, world):
+    world, clock, inp, zx, zy, cs, objects, highscores = initialize(screen, world)
+    m, player, global_objects, global_cs, atlas, globals.time_alive, globals.news = world    
+    while(True):
         screen.clear()
-        if clock <= 200:
-            display.night_colors()
-            player.mode = "werewolf"
-            player.icon = "w"
-            player.color = 14
-            player.original_color = 14
-        else:
-            display.day_colors()
-            player.mode = "human"
-            player.icon = "@"
-            player.color = 1
-            player.original_color = 1
         
-        keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_cs, tiles)
+        keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_cs, tiles, atlas)
+        change_colors(player, clock)
         
         if player.stun_timer == 0:    
             swim(m,player)
-
+        
         new_zx = rounds(mapgen.ZONE_LENGTH, player.x)
         new_zy = rounds(mapgen.ZONE_LENGTH, player.y)
         if new_zx != zx or new_zy != zy:
@@ -100,27 +97,18 @@ def main(screen, world):
                 c.invisibility_timer -= 1
                 c.color = under_color(c, m)
                 if c.invisibility_timer == 0:
-                    c.color = c.original_color                
-
-        if player.hp <= 0:
-            print("yea")
-            return
-        # display callz
-        for c in cs:
-            if on_cam(c,cam_x,cam_y):
-                    screen.addstr(c.y - cam_y, c.x - cam_x, c.icon, curses.color_pair(c.color))
+                    c.color = c.original_color
                     
-        display_atlas(screen, atlas, player)
-            
-        display_news(screen, news)
-     
-        display_inv(screen, player.inventory)
+        player.fullness -= 0.1
         
-        display_hp(screen, player)
-
-        screen.addstr(13, CAM_WIDTH + 1, "gold: " + str(player.gold), curses.color_pair(21))
-        
-        display_clock(screen, clock)
+        if player.fullness <= 10.0:
+            globals.death = "you died of starvation"
+            player.hp = 0
+        if player.hp <= 0:
+            die(m, player, global_objects, global_cs, atlas, screen, highscores)
+            return    
+        stuff_breaks(player)
+        display_calls(screen, atlas, player, news, clock, cs, cam_x, cam_y)
             
         screen.refresh()
 
@@ -128,27 +116,16 @@ def main(screen, world):
 
         clock += 1
         
-        if inp == ord('x'):
+        if inp == ord('x') and globals.debug_mode == True:
             clock += 100
+            globals.time_alive += 100
         
         if clock >= 400:
             clock = 0
             
 
-world = make_world()
+world = read("world")
+#world = make_world()
+write(world, "world")
+#exit()
 curses.wrapper(main, world)
-inventory = []
-player = Creature(ZONE_LENGTH, ZONE_LENGTH, "w", 14, 3, "werewolf")
-merchant = Creature(ZONE_LENGTH, ZONE_LENGTH, "w", 14, 3, "werewolf")
-for x in range(3):
-    p, effect, icon, color = choice(items)
-    potion = wlib.Object(0, 0, icon, color, p, p, 5)
-    potion.effect = effect
-    merchant.inventory.append(potion)
-
-
-g = 10
-msg = ""
-n = choice(["Gerald", "Sathy", "Randy", "Joshua"])
-#curses.wrapper(store.buy_sell, merchant, player, n, "\"Hello, I am %s, can I buy stuff from you.\""% n, "\"Thanks! Here is your gold\"")
-#curses.wrapper(store.buy_sell, player, merchant, n, "\"Hello, I am %s, these are my wares.\""% n, "You bought ")
