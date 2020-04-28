@@ -80,12 +80,12 @@ def buy_sell(screen, buyer, seller, n, msg1, msg2):
         screen.refresh()
         inp = screen.getch()
 
-def arrow(a_row, inp, length):
+def arrow(a_row, inp, length, begining=2):
     if inp == curses.KEY_DOWN:
         a_row += 1
     elif inp == curses.KEY_UP:
         a_row -= 1
-    a_row = limit(a_row, length + 2, 2)
+    a_row = limit(a_row, length + begining, begining)
     return a_row
 
 def trade(buyer, seller, selected_item, msg, screen):

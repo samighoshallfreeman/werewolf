@@ -9,6 +9,7 @@ import mapgen
 from globals import news
 import globals
 from items import make_item
+from menu import do_menu
 
     
 def make_world():
@@ -44,9 +45,9 @@ def initialize(screen, world):
             global_objects.append(corpse)
             global_cs.remove(x)
         player = Creature(mapgen.ZONE_LENGTH, mapgen.ZONE_LENGTH, "w", 14, 3, "werewolf")
-        player.inventory = [make_item("an apple")]
+        
         global_cs += [player]
-    
+    player.inventory = [make_item("an axe")]
     zx = rounds(mapgen.ZONE_LENGTH, player.x)
     zy = rounds(mapgen.ZONE_LENGTH, player.y)
     objects = get_local(zx, zy, global_objects)
@@ -59,6 +60,10 @@ def main(screen, world):
     m, player, global_objects, global_cs, atlas, globals.time_alive, globals.news = world    
     while(True):
         screen.clear()
+        apples = filter(lambda n: n.name == "an axe", global_objects)
+        apples = map(lambda a: (a, distance(a, player)), apples)
+        a = min(apples, key=lambda t: t[1])
+        news.append("p.x: %d, p.y: %d, a.x: %d, a.y: %d" % (player.x, player.y, a[0].x, a[0].y))
         
         keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_cs, tiles, atlas)
         change_colors(player, clock)
@@ -122,10 +127,15 @@ def main(screen, world):
         
         if clock >= 400:
             clock = 0
-            
 
-world = read("world")
-#world = make_world()
-write(world, "world")
-#exit()
-curses.wrapper(main, world)
+def hack(screen):
+    if do_menu(screen) == 1:
+        world = read("world")
+    else:
+        world = make_world()
+    write(world, "world")
+    main(screen, world)
+
+#make_world()
+curses.wrapper(hack)    
+#print("yo")

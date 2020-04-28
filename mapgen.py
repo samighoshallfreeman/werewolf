@@ -30,12 +30,13 @@ def factory(m, startx, starty , endx, endy, objects):
 def plains(m, startx, starty, endx, endy, objects):
     print("    * Constructing plains...")
     building_zone(m, startx, starty, endx, endy, 250, 4, 4, 10, 10)
-    objects += gen_flowers(m, startx, starty, 1000)
+    objects.extend(gen_items(m, startx, starty, 1000, wlib.Object(0, 0, "*", 14, "a flower", "that flower smells good", 1)))
    
 def forest(m, startx, starty , endx, endy, objects):
     print("    * Constructing forest...")
     for x in range(30000):
         m[randint(starty, endy)][randint(startx, endx)] = 8
+    objects.extend(gen_items(m, startx, starty, 5000, wlib.Object(0, 0, "6", 14, "an apple", "an apple", 5)))
  
 def mountains(m, startx, starty , endx, endy, objects):
     print("    * Constructing mountains...")
@@ -284,24 +285,24 @@ def under_color(c,m):
     u_color = tile[1]
     return u_color
 
-def gen_flowers(m, startx, starty, num):
+def gen_items(m, startx, starty, num, o):
     print("    * generating flowers...")
-    flowers = []
+    items = []
     for x in range(num):
-        flower = wlib.Object(0, 0, "*", 14, "a flower", "that flower smells good", 1)
         #flower.effect = flower_effect
-        flower = wlib.spawn_thing(flower, m, startx, startx + ZONE_LENGTH, starty, starty + ZONE_LENGTH)
-        f_spot = m[flower.y][flower.x]
+        o = wlib.spawn_thing(o, m, startx, startx + ZONE_LENGTH, starty, starty + ZONE_LENGTH)
+        f_spot = m[o.y][o.x]
         if if_outdoors(display.tiles[f_spot][0]):
-            flowers.append(flower)
-    return flowers
+            items.append(o)
+    return items
                 
 def gen_objects(m, z, startx, endx, starty, endy):
     print("    * generating objects...")
     objectz = []
     print("    *    items...")
     for x in range(int(ZONE_LENGTH * ZONE_LENGTH * z.perc_p)):
-        i = choice(list(items.keys()))
+        f = filter(lambda n:n != "a flower", list(items.keys()))
+        i = choice(list(f))
         effect, icon, color = items[i]
         potion = wlib.Object(0, 0, icon, color, i, i, randint(4, 6))
         #potion.effect = effect
