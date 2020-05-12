@@ -1,13 +1,13 @@
 from random import randint, choice, random
-import wlib
-#from wlib import spawn_thing
+#import wlib
+
 from typing import List
 import numpy as np
 
-import display
+#import display
 from misc import shuffled, w_h
 from globals import *
-from items import items, flower_effect
+#from items import items, flower_effect, make_item
 import pickle
 
 
@@ -218,8 +218,8 @@ def spawn_villagers(m, cs, z, startx, endx, starty, endy):
         r_i = []
         for x in range(3):
             i = choice(list(items.keys()))
-            effect, icon, color = items[i]
-            item = wlib.Object(0, 0, icon, color, i, i, randint(4,6))
+            effect, icon, color, cost = items[i]
+            item = wlib.Object(0, 0, icon, color, i, i, randint(cost - 1, cost + 1))
             #item.effect = effect
             r_i.append(item)
         villager.name = choice(["Gerald", "Sathy", "Randy", "Joshua"])
@@ -303,9 +303,12 @@ def gen_objects(m, z, startx, endx, starty, endy):
     for x in range(int(ZONE_LENGTH * ZONE_LENGTH * z.perc_p)):
         f = filter(lambda n:n != "a flower", list(items.keys()))
         i = choice(list(f))
-        effect, icon, color = items[i]
-        potion = wlib.Object(0, 0, icon, color, i, i, randint(4, 6))
+        effect, icon, color, cost = items[i]
+        potion = wlib.Object(0, 0, icon, color, i, i, randint(cost - 1, cost + 1))
         #potion.effect = effect
+        if potion.name == "a chest":
+            for x in range(3):
+                potion.inventory.append(make_item(choice(list(items.keys()))))  
         potion = wlib.spawn_thing(potion, m)
 
         objectz.append(potion)
@@ -404,13 +407,6 @@ def is_doory(b):
                 return True
     return False
     
-n = 0
-for x in range(1000):
-    b = make_building(10,10)
-    if not is_doory(b):
-        print(n)
-        assert(False)
-    n += 1
 print("SUCCESS!")
     
 def if_outdoors(tile):
@@ -429,3 +425,44 @@ def random_building(startx, starty, endx, endy, minwidth, minhight, maxhight, ma
     building_height = randint(minhight,maxhight)
     building = make_building(building_width, building_height)
     return (building_x, building_y, building)
+    
+def room_make(minwidth, minhight, maxhight, maxwidth):
+    room_width = randint(minwidth,maxwidth)
+    room_height = randint(minhight,maxhight)
+    room = make_building(room_width, room_height)
+    return room
+    
+def find_coordinates_where(f, l):
+    results = []
+    for y in range(len(l)):
+        for x in range(len(l[0])):
+            if f(l[y][x]):
+                results.append((x, y))
+    return results
+            
+def random_building2(startx, starty, endx, endy, minwidth, minhight, maxhight, maxwidth):
+    bmap_width = 30
+    b_map = [[0 for x in range(bmap_width)] for y in range(bmap_width)]
+    middle = int(bmap_width / 2)
+    
+    room = room_make(minwidth, minhight, maxhight, maxwidth)
+    stamp(middle, middle, room, b_map)
+    
+    l = find_coordinates_where(lambda x: x == 1, room)
+    l = list(filter(lambda c: c[0] == len(room[0]) - 1, l))
+    dx, dy  = choice(l)
+    
+    room_height = len(room)
+    start_x = dx
+    top_y = starty
+    bottom_y = starty + room_height
+    e_room = room_make(minwidth, minhight, maxhight - 2, maxwidth - 2)
+    e_room[dy][0] = 3
+    stamp(middle + start_x, middle, e_room, b_map)
+    return b_map
+
+b = random_building2(25, 25, 0, 0, 5,5,10,10)
+for r in b:
+    print(r)
+    
+    

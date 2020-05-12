@@ -3,45 +3,51 @@ import wlib
 import curses 
 import misc
 import display
-from random import choice
+from random import choice, randint
 
-def healing_potion_effect(player, creatures, m, objects, global_objects, screen, global_cs):
+def healing_potion_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
     player.hp += 2
     if player.hp > player.hp_limit:
         player.hp = player.hp_limit
         wlib.news.append("but you couldn't heal much")
     news.append("you drank a healing potion. glug, glug")
+    player.inventory.remove(self)
 
-def speed_potion_effect(player,creatures,m, objects, global_objects, screen, global_cs):
+def speed_potion_effect(player,creatures,m, objects, global_objects, screen, global_cs, self):
     o = filter(lambda x: x.icon != "w", creatures)
     for x in o:
         x.stun_timer = 3
     news.append("you drank a speed potion. glug, glug")
-    
-def strength_potion_effect(player,creatures, m, objects, global_objects, screen, global_cs):
+    player.inventory.remove(self)
+def strength_potion_effect(player,creatures, m, objects, global_objects, screen, global_cs, self):
     player.hp_limit += 1
     news.append("you drank a strength potion. glug, glug")
-
-def invisibility_potion_effect(player, creatures,m, objects, global_objects, screen, global_cs):
+    player.inventory.remove(self)
+    
+def invisibility_potion_effect(player, creatures,m, objects, global_objects, screen, global_cs, self):
     player.invisibility_timer = 8
     news.append("you drank an invisibility potion. glug, glug")
+    player.inventory.remove(self)
     
-def flower_effect(player, creatures, m, objects, global_objects, screen, global_cs):
+def flower_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
     flower = wlib.Object(player.x, player.y, "*", 14, "a flower", "that flower smells good" )
     objects.append(flower)
     global_objects.append(flower)
     news.append("you planted a flower")
-
-def sheild_effect(player, creatures, m, objects, global_objects, screen, global_cs):
+    player.inventory.remove(self)
+    
+def sheild_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
     sheild = wlib.Object(player.x, player.y, "]", 7, "a sheild", "a sheild" )
     objects.append(sheild)
     global_objects.append(sheild)
     news.append("you threw your sheild... why?")
+    player.inventory.remove(self)
     
-def apple_effect(player, creatures, m, objects, global_objects, screen, global_cs):
+def apple_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
     news.append("you ate an apple! munch munch")
     player.fullness += 20.0
-
+    player.inventory.remove(self)
+    
 def shoot(player, objects, global_objects, xv, yv, m, creatures, global_cs):    
     a = wlib.Object(player.x, player.y, "/", 1, "an arrow", "an arrow" )
     for x in range(5):
@@ -64,7 +70,7 @@ def shoot(player, objects, global_objects, xv, yv, m, creatures, global_cs):
     objects.append(a)
     global_objects.append(a)
     
-def bow_effect(player, creatures, m, objects, global_objects, screen, global_cs):
+def bow_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
     cam_y = player.y - int(CAM_HEIGHT / 2)
     cam_x = player.x - int(CAM_WIDTH / 2)
     x = player.x - cam_x
@@ -86,9 +92,9 @@ def bow_effect(player, creatures, m, objects, global_objects, screen, global_cs)
         elif inp == curses.KEY_RIGHT:        
             shoot(player, objects, global_objects, 1, 0, m, creatures, global_cs)
         player.inventory.remove(arrows[0])
-    player.inventory.append(make_item("a bow"))
+        self.hp -= 1
     
-def axe_effect(player, creatures, m, objects, global_objects, screen, global_cs):
+def axe_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
     junk = list(filter(lambda x: x.icon == "?", objects))
     junk = map(lambda w: (w, wlib.distance(w, player)), junk)
     junk = list(filter(lambda b: b[1] <= 1, junk))
@@ -100,12 +106,10 @@ def axe_effect(player, creatures, m, objects, global_objects, screen, global_cs)
         global_objects.remove(b)
         news.append("bash!")
         player.inventory.append(make_item("a piece of wood"))
-    player.inventory.append(make_item("an axe"))
     
 def destroy_wood(player, m):
     wood = []
     p_neighbors = scan_map(player.x - 1, player.y - 1, 3, 3, m)
-    news.append(str(p_neighbors))
     wood = list(filter(lambda t: t[2] in (1, 8), p_neighbors))
     if wood != []:
         wy, wx, tilenum = choice(wood)
@@ -131,16 +135,16 @@ tile_nums.sort()
 assert(len(test_result) == 4)
 assert(tile_nums == [1,1,1,3])
 
-def wood_effect(player, creatures, m, objects, global_objects, screen, global_cs):
+def wood_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
     cam_y = player.y - int(CAM_HEIGHT / 2)
     cam_x = player.x - int(CAM_WIDTH / 2)
     x = player.x - cam_x
     y = player.y - cam_y
-    screen.addstr(1, 1, "Wich way would you like to shoot the arrow?")
-    screen.addstr(y - 1, x, "^", curses.color_pair(0))
-    screen.addstr(y + 1, x, "v", curses.color_pair(0))
-    screen.addstr(y, x + 1, ">", curses.color_pair(0))
-    screen.addstr(y, x - 1, "<", curses.color_pair(0))
+    screen.addstr(1, 1, "Were would you like to put the wood?")
+    screen.addstr(y - 1, x, "#", curses.color_pair(0))
+    screen.addstr(y + 1, x, "#", curses.color_pair(0))
+    screen.addstr(y, x + 1, "#", curses.color_pair(0))
+    screen.addstr(y, x - 1, "#", curses.color_pair(0))
     inp = screen.getch() 
     if inp == curses.KEY_DOWN:
         cord = (player.y + 1, player.x)
@@ -151,24 +155,28 @@ def wood_effect(player, creatures, m, objects, global_objects, screen, global_cs
     elif inp == curses.KEY_RIGHT:        
         cord = (player.y, player.x + 1)
     m[cord[0]][cord[1]] = 1
-    
-    
+    player.inventory.remove(self)
+
+def chest_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
+    display.chest_screen(screen, self, player)    
         
-items =   { "a healing potion": (healing_potion_effect, "8", 13)
-          , "a speed potion": (speed_potion_effect, "8", 13)
-          , "an invisibility potion": (invisibility_potion_effect, "8", 13)
-          , "a strength potion": (strength_potion_effect, "8", 13)
-          , "a sheild": (sheild_effect, "]", 8)
-          , "a bow": (bow_effect, "}", 1)
-          , "an arrow": (lambda a, b, c, d, e, f, g: None, "/", 1) 
-          , "an apple": (apple_effect, "6", 14)
-          , "a flower": (flower_effect, "*", 14)
-          , "an axe": (axe_effect, "p", 1)
-          , "a piece of wood": (wood_effect, "=", 2) 
+items =   { "a healing potion": (healing_potion_effect, "8", 13, 5)
+          , "a speed potion": (speed_potion_effect, "8", 13, 4)
+          , "an invisibility potion": (invisibility_potion_effect, "8", 13, 5)
+          , "a strength potion": (strength_potion_effect, "8", 13, 5)
+          , "a sheild": (sheild_effect, "]", 8, 5)
+          , "a bow": (bow_effect, "}", 1, 6)
+          , "an arrow": (lambda a, b, c, d, e, f, g: None, "/", 1, 3) 
+          , "an apple": (apple_effect, "6", 14, 5)
+          , "a flower": (flower_effect, "*", 14, 1)
+          , "an axe": (axe_effect, "p", 1, 5)
+          , "a piece of wood": (wood_effect, "=", 2, 3)
+          , "a chest": (chest_effect, "=", 21, 6)
           } 
           
 def make_item(name, x=0, y=0):
     i = items[name]
     new_obj = wlib.Object(x,y, i[1], i[2], name, name)
+    new_obj.cost = randint(i[3] - 1, i[3] + 1)
     #new_obj.effect = i[1]
     return new_obj

@@ -7,7 +7,7 @@ def do_menu(screen):
     a_row = 7
     key = 0
     curses.curs_set(False)
-    while key != 27:
+    while key != 10:
         screen.clear()
         write_cool_word("WEREWOLF", 20, 1, screen) 
         screen.addstr(5,5,"would you like to...")
@@ -28,7 +28,7 @@ def warning(screen):
     a_row = 7
     key = 0
     curses.curs_set(False)
-    while key != 27:
+    while key != 10:
         screen.clear()
         screen.addstr(5,5,"WARNING: genrating a new world will destroy the old world. would you like to...", curses.color_pair(14))
         

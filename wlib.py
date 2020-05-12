@@ -43,7 +43,8 @@ class Object:
         self.name = name
         #self.effect = lambda x, y, z, foo, bar, a, gc: None
         self.cost = cost
-        self.hp = 1 
+        self.hp = 4
+        self.inventory = []
         
 def write(l, name):
     f = open(name, "wb")
@@ -160,7 +161,7 @@ def attempt_move(c, m, xmod, ymod, cs,objects):
                 xmod, ymod = get_new_mods(xmod, ymod)
             else:
                 return
-            attempt_move(c, m, xmod, ymod, cs, objects)
+                attempt_move(c, m, xmod, ymod, cs, objects)
             return
         c.x += xmod
         c.y += ymod
@@ -248,11 +249,13 @@ def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_c
         write(world, "world")
         player.hp = 0
         globals.death = "you quit"
+    elif inp == ord('m'):
+        pass
     elif inp in map(lambda n: ord(str(n)), range(0, 10)):
         selected_number = inp - 49
-        cur_inv = player.inventory.pop(selected_number)
+        cur_inv = player.inventory[selected_number]
         effect = items.items[cur_inv.name][0]
-        effect(player, cs, m, objects, global_objects, screen, global_cs)
+        effect(player, cs, m, objects, global_objects, screen, global_cs, cur_inv)
     elif inp == ord('b'):
         vs_close = list(filter(lambda c: c.icon == "v" and distance(c, player) < 2, cs))
         if vs_close != []:
@@ -367,7 +370,7 @@ def shark(map, creatures):
             x.icon = "^"
                     
 def swim(map, player):
-    if map[player.x][player.y] == 4 and player.stun_timer == 0:
+    if player.stun_timer == 0:
         player.stun_timer = 2
 
 def stuff_breaks(player):

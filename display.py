@@ -4,6 +4,7 @@ from random import randint
 import numpy as np
 from misc import irounds
 import globals
+import store
 
 tiles = {0: (".",0, True),
          1: ("#",2, False),
@@ -37,6 +38,75 @@ def limit(foo,limit, bottom=0):
 assert(limit(10,5) == 5)
 assert(limit(10,30) == 10)
 assert(limit(-10,10) == 0)
+
+
+
+def chest_arrow(a_row, inp, length, begining=2):
+    if inp == curses.KEY_DOWN:
+        a_row += 1
+    elif inp == curses.KEY_UP:
+        a_row -= 1
+    a_row = limit(a_row, length + begining, begining)
+    return a_row
+    
+def display_stuff_chest(cur_row, a_row, screen, seller, buyer, giver, taker):
+    # arrow
+    screen.addstr(a_row, 1, "->", curses.color_pair(1))
+    # buyer inv
+    screen.addstr(1, 46, taker, curses.color_pair(21))
+    for x in range(len(buyer)):            
+        screen.addstr(x + 2, 50, buyer[x].name, curses.color_pair(0))
+    
+    # msg
+    screen.addstr(1, 1, giver, curses.color_pair(21))
+    # seller inv
+    cur_row = 2
+    for i in seller:
+        c = curses.color_pair(0)
+        if cur_row == a_row:
+            c = curses.color_pair(1)
+        screen.addstr(cur_row, 4, i.name, c)
+                
+        cur_row += 1
+    # exit
+    E_c = curses.color_pair(14)
+    if cur_row == a_row:
+        E_c = curses.color_pair(1)#20
+    screen.addstr(cur_row, 4, "Exit store", E_c)
+
+def prompt(screen, s):
+    pass
+    #screen.addstr(
+
+def chest_screen(screen, chest, player):
+    init_colors()
+    inp = 0
+    a_row = 2 
+    cur_row = 0
+    t_inv = player.inventory
+    g_inv = chest.inventory
+    taker = "player inventory"
+    giver = "chest inventory"
+    while inp != 27:
+        screen.clear()
+        a_row = chest_arrow(a_row, inp, len(g_inv))
+        if store.exit_selected(g_inv, inp, a_row):
+            break
+        if inp == 10:
+            selected_item = g_inv[a_row - 2]
+            #message(screen, 1, 1, "you took " + selected_item.name + " out of your chest")
+            t_inv.append(selected_item)
+            g_inv.remove(selected_item)
+        elif inp == 9:
+            taker = "chest inventory" if taker == "player inventory" else "player inventory"
+            giver = "chest inventory" if taker == "player inventory" else "player inventory"
+            swap = t_inv
+            t_inv = g_inv
+            g_inv = swap
+        #display_stuff_chest(cur_row, a_row, screen, chest, msg)
+        display_stuff_chest(cur_row, a_row, screen, g_inv,t_inv, giver, taker)
+        inp = screen.getch()
+    
 
 def winit_color(cn, r, g, b):
     nr = limit(r,1000)
