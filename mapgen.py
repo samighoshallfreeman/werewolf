@@ -1,13 +1,13 @@
 from random import randint, choice, random
-#import wlib
-
+import wlib
+import geometry as g
 from typing import List
 import numpy as np
 
-#import display
+import display
 from misc import shuffled, w_h
 from globals import *
-#from items import items, flower_effect, make_item
+from items import items, flower_effect, make_item
 import pickle
 
 
@@ -21,15 +21,15 @@ class Zone:
 
 def village(m, startx, starty , endx, endy, objects):
     print("    * Constructing village...")
-    building_zone(m, startx, starty, endx, endy, 100, 4, 4, 10, 10 )
+    building_zone(m, startx, starty, endx, endy, 400, 10, 10, 15, 15 )
             
 def factory(m, startx, starty , endx, endy, objects):
     print("    * Constructing factory...")
-    building_zone(m, startx, starty, endx, endy, 90, 6, 6, 18, 18)
+    building_zone(m, startx, starty, endx, endy, 360, 10, 10, 18, 18)
     
 def plains(m, startx, starty, endx, endy, objects):
     print("    * Constructing plains...")
-    building_zone(m, startx, starty, endx, endy, 250, 4, 4, 10, 10)
+    building_zone(m, startx, starty, endx, endy, 1000, 10, 10, 15, 15)
     objects.extend(gen_items(m, startx, starty, 1000, wlib.Object(0, 0, "*", 14, "a flower", "that flower smells good", 1)))
    
 def forest(m, startx, starty , endx, endy, objects):
@@ -234,9 +234,25 @@ def spawn_guards(m, cs, z, startx, endx, starty, endy):
         cs.append(guard)
         
 def building_zone(m, startx, starty , endx, endy, building_divider, minwidth, minhight, maxwidth, maxhight):
+    buildings = []
     for x in range(int((endx - startx) * (endy - starty) / building_divider)):
-            (building_x, building_y, building) = random_building(startx, starty , endx, endy, minwidth, minhight, maxwidth, maxhight)
-            stamp_building(building_x, building_y, building, m)
+        building = random_building2(startx, starty, endx, endy, minwidth, minhight, maxwidth, maxhight)
+        bx = randint(startx, endx)
+        by = randint(starty, endy)
+            #(building_x, building_y, building) = random_building2(startx, starty , endx, endy, minwidth, minhight, maxwidth, maxhight)
+        brect = g.Rect(bx, by, len(building[0]), len(building))
+
+        collide = False
+        for b in buildings:
+            if b.overlaps_with(brect):
+                collide = True
+                break
+        if collide == False:
+            buildings.append(brect)
+        
+        stamp(bx, by, building, m)
+        
+        
     
 zones = [
     Zone("mountains", 0.001, 0.00, 0.00, plains,),#213
@@ -396,7 +412,7 @@ def make_building(w,h):
             if results[row][column] == 1 and not is_corner(column,row,w,h):
                 v_cord.append([row , column])
     v = choice(v_cord)
-    results[v[0]][v[1]] = 3
+    #results[v[0]][v[1]] = 3
     return results
 
 
@@ -439,30 +455,124 @@ def find_coordinates_where(f, l):
             if f(l[y][x]):
                 results.append((x, y))
     return results
-            
+
+def make_adjacent_room(main_room, big):
+    room_height = len(main_room)
+    room_width = len(main_room[0])
+    if big:
+        MIN_WIDTH = 4
+        MIN_HEIGHT = 4
+        MAX_WIDTH = room_width + 3
+        MAX_HEIGHT = room_height + 3
+    else:
+        MIN_WIDTH = 3
+        MIN_HEIGHT = 3
+        MAX_WIDTH = room_width - 2
+        MAX_HEIGHT = room_height - 2
+    
+    e_room = room_make(MIN_WIDTH, MIN_HEIGHT, MAX_HEIGHT, MAX_WIDTH)
+
+    return e_room
+
+def attach_adjacent_room(main_room, r, m, middle, direction, big):
+    main_room_width = len(main_room[0])
+    main_room_height = len(main_room)
+    r_height = len(r)
+    r_width = len(r[0])
+
+    width_diff = abs(main_room_width - r_width)
+    height_diff = abs(main_room_height - r_height)
+    
+    modmod = 3  
+    smallxmod_min = 0 - r_width + modmod
+    smallxmod_max = width_diff - modmod + 1
+    smallymod_min = 0 - r_height + modmod
+    smallymod_max = height_diff - modmod + 1
+    #print("xmod: range(%d, %d)" % (smallxmod_min, smallxmod_max))
+    #print("ymod: range(%d, %d)" % (smallymod_min, smallymod_max))
+    #print("")
+    xmod = randint(smallxmod_min, smallxmod_max) if big else randint(0, width_diff)
+    ymod = randint(smallymod_min, smallymod_max) if big else randint(0, height_diff)
+
+    xs = [ middle + xmod
+         , middle + xmod
+         , middle + main_room_width - 1
+         , middle - r_width + 1
+         ]
+
+    ys = [ middle - r_height + 1
+         , middle + main_room_height - 1
+         , middle + ymod
+         , middle + ymod
+         ]
+    door_x_min = middle + xmod + 1
+    door_x_max = middle + xmod + r_width - 1
+    
+    main_right_edge_x = middle + main_room_width
+    main_top_y = middle
+    main_bottom_y = main_top_y + main_room_height
+    east_room_top_y = middle + ymod + 1
+    east_room_bottom_y = east_room_top_y + r_height - 2
+    
+    south_room_left_edge = middle + xmod + 1
+    south_room_right_edge = south_room_left_edge + r_width - 2
+    
+    main_edges = [[(x, middle) for x in range(middle + 1, middle + main_room_width)],
+                  [(x, main_bottom_y - 1) for x in range(middle + 1, middle + main_room_width - 1)],
+                  [(main_right_edge_x - 1, y) for y in range(main_top_y, main_bottom_y)],
+                  [(middle, y) for y in range(main_top_y + 1, main_bottom_y)]
+                 ]
+    edges = [[(x, middle) for x in range(door_x_min, door_x_max)],
+             [(x, main_bottom_y - 1) for x in range(south_room_left_edge, south_room_right_edge)],
+             [(main_right_edge_x - 1, y) for y in range(east_room_top_y, east_room_bottom_y)],
+             [(middle, y) for y in range(east_room_top_y, east_room_bottom_y)]
+            ]
+    
+    
+    stamp(xs[direction], ys[direction], r, m)
+    main_edge = set(main_edges[direction])
+    room_edge = set(edges[direction])
+    finding_doory = list(main_edge.intersection(room_edge))
+    doorx,doory = choice(finding_doory)
+    m[doory][doorx] = 3
+
+        
+def pick_door(m):
+    l = find_coordinates_where(lambda x: x == 1, m)
+    l = list(filter(lambda w: num_neighbors(m, w[0], w[1], 0) == 1, l))
+    l = list(filter(lambda w: num_neighbors(m, w[0], w[1], 2) == 1, l))
+    return choice(l)
+
+def trim_building(b_map):
+    ws = find_coordinates_where(lambda x: x == 1, b_map)
+    westx = min(ws, key=lambda c: c[0])[0] 
+    eastx = max(ws, key=lambda c: c[0])[0] + 1
+    northy = min(ws, key=lambda c: c[1])[1] 
+    southy = max(ws, key=lambda c: c[1])[1] + 1
+    return list(np.array(b_map)[northy:southy, westx:eastx])
+    
 def random_building2(startx, starty, endx, endy, minwidth, minhight, maxhight, maxwidth):
-    bmap_width = 30
-    b_map = [[0 for x in range(bmap_width)] for y in range(bmap_width)]
+    bmap_width = 50
+    b_map = [[2 for x in range(bmap_width)] for y in range(bmap_width)]
     middle = int(bmap_width / 2)
     
     room = room_make(minwidth, minhight, maxhight, maxwidth)
     stamp(middle, middle, room, b_map)
+    b = randint(0, 3)
+    l = list(range(4))
+    for direction in shuffled(l)[:3]:
+        new_room = make_adjacent_room(room, True if b == direction else False)
+        attach_adjacent_room(room, new_room, b_map, middle, direction, True if b == direction else False)
+    for x in range(choice([1, 1, 2, 2, 2, 3])):
+        dx, dy = pick_door(b_map)
+        b_map[dy][dx] = 3
+    return trim_building(b_map)
     
-    l = find_coordinates_where(lambda x: x == 1, room)
-    l = list(filter(lambda c: c[0] == len(room[0]) - 1, l))
-    dx, dy  = choice(l)
-    
-    room_height = len(room)
-    start_x = dx
-    top_y = starty
-    bottom_y = starty + room_height
-    e_room = room_make(minwidth, minhight, maxhight - 2, maxwidth - 2)
-    e_room[dy][0] = 3
-    stamp(middle + start_x, middle, e_room, b_map)
-    return b_map
 
-b = random_building2(25, 25, 0, 0, 5,5,10,10)
-for r in b:
-    print(r)
+#for x in range(10):
+#    b = random_building2(25, 25, 0, 0, 5,5,7,7)
+#    for r in b:
+#        l = list(map(str,r))    
+#        print("".join(l).replace( "0", "."))
     
     

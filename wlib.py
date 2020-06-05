@@ -1,7 +1,5 @@
-from math import sqrt
 import copy
 from random import *
-
 from display import *
 import display
 from misc import *
@@ -71,13 +69,6 @@ def walkable():
         
 def okay_spawn(m, c):
     return m[c.y][c.x] in walkable() 
-
-def distance(c1, c2):
-    a = c1.x - c2.x      
-    b = c1.y - c2.y
-    c = a**2 + b**2
-    
-    return sqrt(c)
                
 def no_objects_between(c, t, os, on_x=False, on_y=False):
     startx, endx = ordered(c.x, t.x)
@@ -289,12 +280,6 @@ def wander(c):
     else:
         ymod = 0
     return (xmod,ymod)
-
-def message(screen, x, y, s, color=0):
-        screen.clear()                    
-        screen.addstr(y, x, s, curses.color_pair(color))
-        screen.refresh()
-        inp = screen.getch()
 
 def within_box(v, b_x, b_y, b_h, b_w):
     if v.x >= b_x and v.y >= b_y:

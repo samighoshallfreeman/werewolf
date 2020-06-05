@@ -4,7 +4,7 @@ from random import randint
 import numpy as np
 from misc import irounds
 import globals
-import store
+import invlib
 
 tiles = {0: (".",0, True),
          1: ("#",2, False),
@@ -80,9 +80,10 @@ def prompt(screen, s):
 
 def chest_screen(screen, chest, player):
     init_colors()
-    inp = 0
+    inp = 0  
     a_row = 2 
     cur_row = 0
+    player.inventory.remove(chest)
     t_inv = player.inventory
     g_inv = chest.inventory
     taker = "player inventory"
@@ -90,7 +91,8 @@ def chest_screen(screen, chest, player):
     while inp != 27:
         screen.clear()
         a_row = chest_arrow(a_row, inp, len(g_inv))
-        if store.exit_selected(g_inv, inp, a_row):
+        if invlib.exit_selected(g_inv, inp, a_row):
+            player.inventory.append(chest)
             break
         if inp == 10:
             selected_item = g_inv[a_row - 2]
@@ -184,6 +186,31 @@ def change_colors(player, clock):
         player.icon = "@"
         player.color = 1
         player.original_color = 1
+
+def display_store(cur_row, a_row, screen, buyer, seller, msg):
+    # arrow
+    screen.addstr(a_row, 1, "->", curses.color_pair(1))
+    # buyer inv
+    for x in range(len(buyer.inventory)):            
+        screen.addstr(x, 50, buyer.inventory[x].name, curses.color_pair(0))
+    # buyer gold
+    screen.addstr(0, 1, "Gold: " + str(buyer.gold), curses.color_pair(21))
+    # msg
+    screen.addstr(1, 1, msg, curses.color_pair(0))
+    # seller inv
+    cur_row = 2
+    for i in seller.inventory:
+        c = curses.color_pair(0)
+        if cur_row == a_row:
+            c = curses.color_pair(1)
+        screen.addstr(cur_row, 4, i.name + "    " + i.cost_str, c)
+                
+        cur_row += 1
+    # exit
+    E_c = curses.color_pair(14)
+    if cur_row == a_row:
+        E_c = curses.color_pair(1)#20
+    screen.addstr(cur_row, 4, "Exit store", E_c) 
     
 def draw_map(screen, tiles, m, cx, cy):
     for row in range(CAM_HEIGHT):
@@ -246,6 +273,12 @@ def display_death(screen, highscores):
         x += 1
         
     screen.addstr(3, 1, "High scores:")
+    screen.refresh()
+    inp = screen.getch()
+    
+def message(screen, x, y, s, color=0):
+    screen.clear()                    
+    screen.addstr(y, x, s, curses.color_pair(color))
     screen.refresh()
     inp = screen.getch()
 

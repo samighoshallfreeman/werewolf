@@ -1,5 +1,6 @@
 from random import randint, shuffle
 from copy import deepcopy
+from math import sqrt
 
 def rotate_list(l, n = 1):
     newlist = l
@@ -7,6 +8,13 @@ def rotate_list(l, n = 1):
         newlist = list(zip(*newlist[::-1]))
     return newlist
 
+def distance(c1, c2):
+    a = c1.x - c2.x      
+    b = c1.y - c2.y
+    c = a**2 + b**2
+    
+    return sqrt(c)
+    
 def between(i1,i2,l):
     """between(1,3,l) == between(3,1,l)"""
     if i1 < i2:
@@ -62,3 +70,4 @@ def irounds(space, c):
 
 def collide(p, c):        
     return p.x == c.x and p.y == c.y
+   

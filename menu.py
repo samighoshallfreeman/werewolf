@@ -1,7 +1,8 @@
 from pyfiglet import figlet_format
 import curses
-from store import arrow
+from invlib import arrow
 from display import init_colors
+
 def do_menu(screen):
     init_colors()
     a_row = 7

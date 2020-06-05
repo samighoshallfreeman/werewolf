@@ -4,11 +4,11 @@ from wlib import *
 import wlib
 from random import randint, choice
 from display import *
-from mapgen import village, gen_objects, build_world, items, under_color
+from mapgen import village, gen_objects, build_world, under_color
 import mapgen
 from globals import news
 import globals
-from items import make_item
+from items import make_item, items
 from menu import do_menu
 
     
@@ -96,7 +96,7 @@ def update_world(player, cs, objects, m):
 def main(screen, world):
     world, clock, inp, zx, zy, cs, objects, highscores = initialize(screen, world)
     m, player, global_objects, global_cs, atlas, globals.time_alive, globals.news = world
-    player.inventory.append(make_item("a bow"))
+    player.inventory.append(make_item("a chest"))
     player.inventory.append(make_item("an arrow"))
     while(True):
         

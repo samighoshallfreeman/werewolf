@@ -96,7 +96,7 @@ def bow_effect(player, creatures, m, objects, global_objects, screen, global_cs,
     
 def axe_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
     junk = list(filter(lambda x: x.icon == "?", objects))
-    junk = map(lambda w: (w, wlib.distance(w, player)), junk)
+    junk = map(lambda w: (w, misc.distance(w, player)), junk)
     junk = list(filter(lambda b: b[1] <= 1, junk))
     if junk == []:
         destroy_wood(player, m)
@@ -166,7 +166,7 @@ items =   { "a healing potion": (healing_potion_effect, "8", 13, 5)
           , "a strength potion": (strength_potion_effect, "8", 13, 5)
           , "a sheild": (sheild_effect, "]", 8, 5)
           , "a bow": (bow_effect, "}", 1, 6)
-          , "an arrow": (lambda a, b, c, d, e, f, g: None, "/", 1, 3) 
+          , "an arrow": (lambda a, b, c, d, e, f, g, h: None, "/", 1, 3) 
           , "an apple": (apple_effect, "6", 14, 5)
           , "a flower": (flower_effect, "*", 14, 1)
           , "an axe": (axe_effect, "p", 1, 5)
