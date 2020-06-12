@@ -3,7 +3,7 @@ import wlib
 import geometry as g
 from typing import List
 import numpy as np
-
+from bsp import make_bsp_rooms
 import display
 from misc import shuffled, w_h
 from globals import *
@@ -21,15 +21,21 @@ class Zone:
 
 def village(m, startx, starty , endx, endy, objects):
     print("    * Constructing village...")
-    building_zone(m, startx, starty, endx, endy, 400, 10, 10, 15, 15 )
+    #building_zone(m, startx, starty, endx, endy, 100, 10, 10, 15, 15 )
+    buildings = make_bsp_rooms(endx - startx, endy - starty)
+    for b in buildings:
+        print("10, 10, %d, %d" % (b.w - 2, b.h - 2)) 
+        building = random_building2(10, 10, b.w - 2, b.h - 2)
+        stamp(startx + b.x, starty + b.y, building, m, 2)
+        
             
 def factory(m, startx, starty , endx, endy, objects):
     print("    * Constructing factory...")
-    building_zone(m, startx, starty, endx, endy, 360, 10, 10, 18, 18)
+    building_zone(m, startx, starty, endx, endy, 50, 10, 10, 18, 18)
     
 def plains(m, startx, starty, endx, endy, objects):
     print("    * Constructing plains...")
-    building_zone(m, startx, starty, endx, endy, 1000, 10, 10, 15, 15)
+    building_zone(m, startx, starty, endx, endy, 400, 10, 10, 15, 15)
     objects.extend(gen_items(m, startx, starty, 1000, wlib.Object(0, 0, "*", 14, "a flower", "that flower smells good", 1)))
    
 def forest(m, startx, starty , endx, endy, objects):
@@ -236,7 +242,7 @@ def spawn_guards(m, cs, z, startx, endx, starty, endy):
 def building_zone(m, startx, starty , endx, endy, building_divider, minwidth, minhight, maxwidth, maxhight):
     buildings = []
     for x in range(int((endx - startx) * (endy - starty) / building_divider)):
-        building = random_building2(startx, starty, endx, endy, minwidth, minhight, maxwidth, maxhight)
+        building = random_building2(minwidth, minhight, maxwidth, maxhight)
         bx = randint(startx, endx)
         by = randint(starty, endy)
             #(building_x, building_y, building) = random_building2(startx, starty , endx, endy, minwidth, minhight, maxwidth, maxhight)
@@ -250,7 +256,7 @@ def building_zone(m, startx, starty , endx, endy, building_divider, minwidth, mi
         if collide == False:
             buildings.append(brect)
         
-        stamp(bx, by, building, m)
+            stamp(bx, by, building, m, 2)
         
         
     
@@ -534,7 +540,7 @@ def attach_adjacent_room(main_room, r, m, middle, direction, big):
     room_edge = set(edges[direction])
     finding_doory = list(main_edge.intersection(room_edge))
     doorx,doory = choice(finding_doory)
-    m[doory][doorx] = 3
+    #m[doory][doorx] = 3
 
         
 def pick_door(m):
@@ -551,7 +557,7 @@ def trim_building(b_map):
     southy = max(ws, key=lambda c: c[1])[1] + 1
     return list(np.array(b_map)[northy:southy, westx:eastx])
     
-def random_building2(startx, starty, endx, endy, minwidth, minhight, maxhight, maxwidth):
+def random_building2(minwidth, minhight, maxhight, maxwidth):
     bmap_width = 50
     b_map = [[2 for x in range(bmap_width)] for y in range(bmap_width)]
     middle = int(bmap_width / 2)
@@ -565,7 +571,7 @@ def random_building2(startx, starty, endx, endy, minwidth, minhight, maxhight, m
         attach_adjacent_room(room, new_room, b_map, middle, direction, True if b == direction else False)
     for x in range(choice([1, 1, 2, 2, 2, 3])):
         dx, dy = pick_door(b_map)
-        b_map[dy][dx] = 3
+        #b_map[dy][dx] = 3
     return trim_building(b_map)
     
 

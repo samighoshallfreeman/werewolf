@@ -239,7 +239,12 @@ def display_hp(screen, p):
 def display_inv(screen, inventory):
     screen.addstr(0, CAM_WIDTH + 1, "Inventory:")
     ci = 1
+   
+    
     for i in inventory:
+        #globals.news.append(ci)
+        #globals.news.append(CAM_WIDTH)
+        #globals.news.append(": " + i.name)
         screen.addstr(ci, CAM_WIDTH + 1, str(ci) + ") ", curses.color_pair(0))
         screen.addstr(ci, CAM_WIDTH + 4, i.icon, curses.color_pair(i.color))
         screen.addstr(ci, CAM_WIDTH + 5, ": " + i.name, curses.color_pair(0))

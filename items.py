@@ -1,4 +1,5 @@
-from globals import news, CAM_HEIGHT, CAM_WIDTH
+from globals import CAM_HEIGHT, CAM_WIDTH
+import globals
 import wlib
 import curses 
 import misc
@@ -9,42 +10,42 @@ def healing_potion_effect(player, creatures, m, objects, global_objects, screen,
     player.hp += 2
     if player.hp > player.hp_limit:
         player.hp = player.hp_limit
-        wlib.news.append("but you couldn't heal much")
-    news.append("you drank a healing potion. glug, glug")
+        globals.news.append("but you couldn't heal much")
+    globals.news.append("you drank a healing potion. glug, glug")
     player.inventory.remove(self)
 
 def speed_potion_effect(player,creatures,m, objects, global_objects, screen, global_cs, self):
     o = filter(lambda x: x.icon != "w", creatures)
     for x in o:
         x.stun_timer = 3
-    news.append("you drank a speed potion. glug, glug")
+    globals.news.append("you drank a speed potion. glug, glug")
     player.inventory.remove(self)
 def strength_potion_effect(player,creatures, m, objects, global_objects, screen, global_cs, self):
     player.hp_limit += 1
-    news.append("you drank a strength potion. glug, glug")
+    globals.news.append("you drank a strength potion. glug, glug")
     player.inventory.remove(self)
     
 def invisibility_potion_effect(player, creatures,m, objects, global_objects, screen, global_cs, self):
     player.invisibility_timer = 8
-    news.append("you drank an invisibility potion. glug, glug")
+    globals.news.append("you drank an invisibility potion. glug, glug")
     player.inventory.remove(self)
     
 def flower_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
     flower = wlib.Object(player.x, player.y, "*", 14, "a flower", "that flower smells good" )
     objects.append(flower)
     global_objects.append(flower)
-    news.append("you planted a flower")
+    globals.news.append("you planted a flower")
     player.inventory.remove(self)
     
 def sheild_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
     sheild = wlib.Object(player.x, player.y, "]", 7, "a sheild", "a sheild" )
     objects.append(sheild)
     global_objects.append(sheild)
-    news.append("you threw your sheild... why?")
+    globals.news.append("you threw your sheild... why?")
     player.inventory.remove(self)
     
 def apple_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
-    news.append("you ate an apple! munch munch")
+    globals.news.append("you ate an apple! munch munch")
     player.fullness += 20.0
     player.inventory.remove(self)
     
@@ -60,7 +61,7 @@ def shoot(player, objects, global_objects, xv, yv, m, creatures, global_cs):
                 wlib.kill_v(c, player, objects, global_objects, m, creatures, global_cs)
             else:
                 creatures.remove(c)
-                news.append("you killed a guard")
+                globals.news.append("you killed a guard")
                 body = wlib.Object(c.x, c.y, "%", 1, "", "A dead villager. Eeeewwww.")
                 objects.append(body)
         elif m[a.y][a.x] not in wlib.walkable() or list(filter(lambda x: misc.collide(x, a), objects)) != []:
@@ -104,7 +105,7 @@ def axe_effect(player, creatures, m, objects, global_objects, screen, global_cs,
         b = min(junk, key=lambda t: t[1])[0]
         objects.remove(b)
         global_objects.remove(b)
-        news.append("bash!")
+        globals.news.append("bash!")
         player.inventory.append(make_item("a piece of wood"))
     
 def destroy_wood(player, m):
@@ -114,7 +115,7 @@ def destroy_wood(player, m):
     if wood != []:
         wy, wx, tilenum = choice(wood)
         m[wy][wx] = 2
-        news.append("chop!")
+        globals.news.append("chop!")
         player.inventory.append(make_item("a piece of wood"))
 def scan_map(start_x, start_y, width, height, map):
     l = []

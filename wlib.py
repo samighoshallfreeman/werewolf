@@ -6,7 +6,7 @@ from misc import *
 from mapgen import *
 import mapgen
 import store
-from globals import news
+import globals
 import globals
 import pickle
 import items
@@ -129,7 +129,7 @@ def attempt_move(c, m, xmod, ymod, cs,objects):
     if off_map(nx,ny):
         if c.icon == "v":
             cs.remove(c)
-            news.append("a villager got away")
+            globals.news.append("a villager got away")
             return
         elif c.icon == "g":
             return
@@ -205,13 +205,13 @@ def move_guard(g,player,m,cs,objects):
         if distance(player,g) == 1.0: #xmod + g.x == player.x and ymod + g.y == player.y:
             sheilds = list(filter(lambda x: x.icon == "]", player.inventory))
             if sheilds != [] and randint(1, 3) == 1:
-                news.append("ya got hit but your sheild blocked it")
+                globals.news.append("ya got hit but your sheild blocked it")
                 sheilds[0].hp -= 1
             else:
                 player.hp -= 1
                 if player.hp <= 0:
                     globals.death = "dat guard dun gocha. -> g"
-                news.append("ya got hit")
+                globals.news.append("ya got hit")
             xmod = 0
             ymod = 0
 
@@ -234,7 +234,7 @@ def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_c
         xmod = movement
     elif inp == 10:
         for o in filter(lambda o: int(distance(player,o)) < 2, objects):
-                news.append(o.description)
+                globals.news.append(o.description)
     elif inp == ord('q'):
         world = (m, player, global_objects, global_cs, atlas, globals.time_alive, globals.news)
         write(world, "world")
@@ -307,7 +307,7 @@ def collision_type(c, names, collide_list, os, global_objects, cs, global_cs, wo
             effect(t, c, os, global_objects, world, cs, global_cs)        
             
 def trap_effect(t, player, objects, global_objects, world, cs, global_cs):
-    news.append("ahhhhh! you got stuck in a trap")
+    globals.news.append("ahhhhh! you got stuck in a trap")
     player.hp -= 1
     if player.hp <= 0:
         globals.death = "you were killed in a trap"
@@ -325,7 +325,7 @@ def pick_up(t, player, objects, global_objects, world, cs, global_cs):
         player.inventory.append(t)
         
 def kill_v(v, player, objects, global_objects, m, cs, global_cs):
-    news.append("You devour the villager...")
+    globals.news.append("You devour the villager...")
     cs.remove(v)
     global_cs.remove(v)
     player.fullness += 30.0
@@ -360,7 +360,7 @@ def swim(map, player):
 
 def stuff_breaks(player):
     for x in list(map(lambda x: x.name, filter(lambda x: x.hp == 0, player.inventory))):
-        news.append("%s of your's broke!"% x)
+        globals.news.append("%s of your's broke!"% x)
     player.inventory = list(filter(lambda x: x.hp != 0, player.inventory))
 
 def die(m, player, global_objects, global_cs, atlas, screen, highscores):

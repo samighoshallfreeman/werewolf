@@ -6,7 +6,7 @@ from random import randint, choice
 from display import *
 from mapgen import village, gen_objects, build_world, under_color
 import mapgen
-from globals import news
+
 import globals
 from items import make_item, items
 from menu import do_menu
@@ -26,7 +26,7 @@ def make_world():
     
     atlas = make_atlas(m, 9)
     
-    news.append("WELCOME TO WEREWOLF")
+    globals.news.append("WELCOME TO WEREWOLF")
     
     return (m, player, objects, cs, atlas, 0, [])
     
@@ -67,6 +67,8 @@ def initialize(screen, world):
     
 
 def update_world(player, cs, objects, m):
+    if m[player.x][player.y] == 4:    
+            swim(m,player)
     for c in cs:
         if c.stun_timer == 0 and distance(c, player) <= CAM_WIDTH:
             if c.icon == "v":
@@ -83,10 +85,8 @@ def update_world(player, cs, objects, m):
             c.color = under_color(c, m)
             if c.invisibility_timer == 0:
                 c.color = c.original_color
-    if m[player.x][player.y] == 4:    
-            swim(m,player)
     
-    player.fullness -= 0.1
+    player.fullness -= 0.5
     
     if player.fullness <= 10.0:
         globals.death = "you died of starvation"
@@ -122,7 +122,8 @@ def main(screen, world):
         
         for o in filter(lambda o: on_cam(o, cam_x, cam_y), objects):
             screen.addstr(o.y - cam_y, o.x - cam_x , o.icon,curses.color_pair(o.color))
-        display_calls(screen, atlas, player, news, clock, cs, cam_x, cam_y)
+        
+        display_calls(screen, atlas, player, globals.news, clock, cs, cam_x, cam_y)
             
         screen.refresh()
 
@@ -136,7 +137,7 @@ def main(screen, world):
         
         if clock >= 400:
             clock = 0
-
+        globals.news.append(str(player.stun_timer))
 def hack(screen):
     if do_menu(screen) == 1:
         world = read("world")
