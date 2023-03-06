@@ -7,7 +7,8 @@ from bsp import make_bsp_rooms
 import display
 from misc import shuffled, w_h
 from globals import *
-from items import items, flower_effect, make_item
+import items
+#from items import items.flower_effect, items.make_item
 import pickle
 
 
@@ -24,8 +25,7 @@ def village(m, startx, starty , endx, endy, objects):
     #building_zone(m, startx, starty, endx, endy, 100, 10, 10, 15, 15 )
     buildings = make_bsp_rooms(endx - startx, endy - starty)
     for b in buildings:
-        print("10, 10, %d, %d" % (b.w - 2, b.h - 2)) 
-        building = random_building2(10, 10, b.w - 2, b.h - 2)
+        building = random_building2(b.w - 1, b.h - 1, b.h - 1, b.w - 1)
         stamp(startx + b.x, starty + b.y, building, m, 2)
         
             
@@ -36,7 +36,7 @@ def factory(m, startx, starty , endx, endy, objects):
 def plains(m, startx, starty, endx, endy, objects):
     print("    * Constructing plains...")
     building_zone(m, startx, starty, endx, endy, 400, 10, 10, 15, 15)
-    objects.extend(gen_items(m, startx, starty, 1000, wlib.Object(0, 0, "*", 14, "a flower", "that flower smells good", 1)))
+    objects.extend(gen_items(m, startx, starty, 100000, wlib.Object(0, 0, "*", 14, "a flower", "that flower smells good", 1)))
    
 def forest(m, startx, starty , endx, endy, objects):
     print("    * Constructing forest...")
@@ -62,7 +62,7 @@ def mountains(m, startx, starty , endx, endy, objects):
     stamp(startx, starty, test_dig, m)
 
 def ocean(m, startx, starty , endx, endy, objects):
-    print("    *   generating ocean....")
+    print("    * generating ocean....")
     s = [[10 for x in range(startx + 1,ZONE_LENGTH - 2)] for y in range(starty + 1, ZONE_LENGTH - 2)]
     w = [[4 for x in range(startx + 2, ZONE_LENGTH - 4)] for y in range(starty + 2, ZONE_LENGTH - 4)]
     stamp(0, 0, w, s)
@@ -70,7 +70,7 @@ def ocean(m, startx, starty , endx, endy, objects):
         automata(s, 10)
     stamp(startx, starty, s, m)
     zone = np.array(m)[starty:endy, startx:endx]
-    
+    stamp(startx, starty, s, zone)
     for x in range(5):
         automata(zone, 2)
     stamp(startx, starty, zone, m)
@@ -223,9 +223,10 @@ def spawn_villagers(m, cs, z, startx, endx, starty, endy):
         wlib.spawn_thing(villager, m, startx, endx, starty, endy)
         r_i = []
         for x in range(3):
-            i = choice(list(items.keys()))
-            effect, icon, color, cost = items[i]
-            item = wlib.Object(0, 0, icon, color, i, i, randint(cost - 1, cost + 1))
+            i = choice(list(items.items.keys()))
+            v_i = i if i not in ["a teleporter"] else "a flower"  
+            effect, icon, color, cost = items.items[v_i]
+            item = wlib.Object(0, 0, icon, color, v_i, v_i, randint(cost - 1, cost + 1))
             #item.effect = effect
             r_i.append(item)
         villager.name = choice(["Gerald", "Sathy", "Randy", "Joshua"])
@@ -242,32 +243,33 @@ def spawn_guards(m, cs, z, startx, endx, starty, endy):
 def building_zone(m, startx, starty , endx, endy, building_divider, minwidth, minhight, maxwidth, maxhight):
     buildings = []
     for x in range(int((endx - startx) * (endy - starty) / building_divider)):
-        building = random_building2(minwidth, minhight, maxwidth, maxhight)
-        bx = randint(startx, endx)
-        by = randint(starty, endy)
-            #(building_x, building_y, building) = random_building2(startx, starty , endx, endy, minwidth, minhight, maxwidth, maxhight)
-        brect = g.Rect(bx, by, len(building[0]), len(building))
+        #building = random_building2(minwidth, minhight, maxwidth, maxhight)
+        #bx = randint(startx, endx)
+        #by = randint(starty, endy)
+        (building_x, building_y, building) = random_building(startx, starty , endx, endy, minwidth, minhight, maxwidth, maxhight)
+        stamp_building(building_x, building_y, building, m)
+        #brect = g.Rect(bx, by, len(building[0]), len(building))
 
-        collide = False
-        for b in buildings:
-            if b.overlaps_with(brect):
-                collide = True
-                break
-        if collide == False:
-            buildings.append(brect)
+        #collide = False
+        #for b in buildings:
+        #    if b.overlaps_with(brect):
+        #        collide = True
+        #        break
+        #if collide == False:
+        #    buildings.append(brect)
         
-            stamp(bx, by, building, m, 2)
+         #   stamp(bx, by, building, m, 2)
         
         
     
 zones = [
-    Zone("mountains", 0.001, 0.00, 0.00, plains,),#213
+    Zone("mountains", 0.0005, 0.00, 0.00, ocean,),#213
     Zone("village", 0.001, 0.005, 0.001, village),
     Zone("plains", 0.0006, 0.003, 0.001, plains),
     Zone("forest", 0.0003, 0.0015, 0.004, forest),
     Zone("village", 0.001, 0.005, 0.001, village),
     Zone("forest", 0.0003, 0.0015, 0.004, forest),
-    Zone("lake", 0.0004, 0.001, 0,village),
+    Zone("mountains", 0.0005, 0.00, 0.00, ocean,),
     Zone("factory", 0.003, 0.006, 0.002, factory),
     Zone("plains", 0.0006, 0.003, 0.001, plains)]
     
@@ -287,7 +289,7 @@ def build_world(zones, m, objects, creatures):
             cur_y += 1
     
 
-i_junks = [ "a shelf of ancient tomes,oh how old"
+i_junks = [ "a shelf of ancient tomes, ooh, how old?"
           , "a comfy sofa, should I sit down?"
           , "a desk. very desky."
           , "a pile of rubble. what happened here?"
@@ -311,7 +313,7 @@ def gen_items(m, startx, starty, num, o):
     print("    * generating flowers...")
     items = []
     for x in range(num):
-        #flower.effect = flower_effect
+        #flower.effect = items.flower_effect
         o = wlib.spawn_thing(o, m, startx, startx + ZONE_LENGTH, starty, starty + ZONE_LENGTH)
         f_spot = m[o.y][o.x]
         if if_outdoors(display.tiles[f_spot][0]):
@@ -323,14 +325,14 @@ def gen_objects(m, z, startx, endx, starty, endy):
     objectz = []
     print("    *    items...")
     for x in range(int(ZONE_LENGTH * ZONE_LENGTH * z.perc_p)):
-        f = filter(lambda n:n != "a flower", list(items.keys()))
+        f = filter(lambda n:n not in ["a flower", "a teleporter"], list(items.items.keys()))
         i = choice(list(f))
-        effect, icon, color, cost = items[i]
+        effect, icon, color, cost = items.items[i]
         potion = wlib.Object(0, 0, icon, color, i, i, randint(cost - 1, cost + 1))
         #potion.effect = effect
         if potion.name == "a chest":
             for x in range(3):
-                potion.inventory.append(make_item(choice(list(items.keys()))))  
+                potion.inventory.append(items.make_item(choice(list(items.items.keys()))))  
         potion = wlib.spawn_thing(potion, m)
 
         objectz.append(potion)
@@ -497,8 +499,8 @@ def attach_adjacent_room(main_room, r, m, middle, direction, big):
     #print("xmod: range(%d, %d)" % (smallxmod_min, smallxmod_max))
     #print("ymod: range(%d, %d)" % (smallymod_min, smallymod_max))
     #print("")
-    xmod = randint(smallxmod_min, smallxmod_max) if big else randint(0, width_diff)
-    ymod = randint(smallymod_min, smallymod_max) if big else randint(0, height_diff)
+    xmod = 0#randint(smallxmod_min, smallxmod_max) if big else randint(0, width_diff)
+    ymod = 0#randint(smallymod_min, smallymod_max) if big else randint(0, height_diff)
 
     xs = [ middle + xmod
          , middle + xmod
@@ -540,7 +542,10 @@ def attach_adjacent_room(main_room, r, m, middle, direction, big):
     room_edge = set(edges[direction])
     finding_doory = list(main_edge.intersection(room_edge))
     doorx,doory = choice(finding_doory)
-    #m[doory][doorx] = 3
+    try:
+        m[doory][doorx] = 3
+    except:
+        pass
 
         
 def pick_door(m):
@@ -557,28 +562,59 @@ def trim_building(b_map):
     southy = max(ws, key=lambda c: c[1])[1] + 1
     return list(np.array(b_map)[northy:southy, westx:eastx])
     
-def random_building2(minwidth, minhight, maxhight, maxwidth):
-    bmap_width = 50
+def random_building2(minwidth, minheight, maxheight, maxwidth):
+    bmap_width = 80
     b_map = [[2 for x in range(bmap_width)] for y in range(bmap_width)]
     middle = int(bmap_width / 2)
+    maxwv = maxwidth + 2
+    maxhv = maxheight + 2
+    hmin = max([int(maxheight/3), 3])
+    wmin = max([int(maxwidth/3), 3])
+    room = room_make(wmin, hmin, max([maxheight - 6, hmin]), max([maxwidth - 6, wmin]))
+    print("main room: %dx%d" % (len(room[1]), len(room)))
     
-    room = room_make(minwidth, minhight, maxhight, maxwidth)
+    maxwv -= len(room[1])
+    maxhv -= len(room)
     stamp(middle, middle, room, b_map)
-    b = randint(0, 3)
+    b = 5#randint(0, 3)
     l = list(range(4))
-    for direction in shuffled(l)[:3]:
-        new_room = make_adjacent_room(room, True if b == direction else False)
-        attach_adjacent_room(room, new_room, b_map, middle, direction, True if b == direction else False)
+    #for direction in l:#[:3]:
+    #new_room = make_adjacent_room(room, True if b == direction else False)
+    nnew_room = room_make(3, 3, maxhv - 3, len(room[1])) 
+    maxhv -= len(nnew_room)
+    
+    snew_room = room_make(3, maxhv, maxhv, len(room[1]))
+    maxhv -= len(snew_room)
+    
+    enew_room = room_make(3, 3, len(room), maxwv - 3)
+    maxwv -= len(enew_room[1])
+    
+    wnew_room = room_make(maxwv, 4, len(room), maxwv)
+    maxwv -= len(wnew_room[1])
+    
+    new_rooms = [nnew_room, snew_room, enew_room, wnew_room]
+    
+    for direction in [0, 1, 2, 3]:
+        attach_adjacent_room(room, new_rooms[direction], b_map, middle, direction, False)
     for x in range(choice([1, 1, 2, 2, 2, 3])):
         dx, dy = pick_door(b_map)
-        #b_map[dy][dx] = 3
+        b_map[dy][dx] = 3
     return trim_building(b_map)
     
+#buildings = []
+b = random_building2(7, 7, 20 ,20)
+for r in b:
+    l = list(map(str,r))   
+    #print("".join(l))
+    # width = len(b[1])
+    # height = len(b)
+    # buildings.append((b, width, height))
+    
+# #print(buildings[0][1])
+# print("min width:" + str(min(buildings, key = lambda x: x[1])[1]))
+# print("max width:" + str(max(buildings, key = lambda x: x[1])[1]))
+# print("min height:" + str(min(buildings, key = lambda x: x[2])[2]))
+# print("max height:" + str(max(buildings, key = lambda x: x[2])[2]))
 
-#for x in range(10):
-#    b = random_building2(25, 25, 0, 0, 5,5,7,7)
-#    for r in b:
-#        l = list(map(str,r))    
-#        print("".join(l).replace( "0", "."))
     
     

@@ -3,11 +3,11 @@ from random import *
 from display import *
 import display
 from misc import *
-from mapgen import *
+#from mapgen import *
 import mapgen
 import store
 import globals
-import globals
+#import globals
 import pickle
 import items
 
@@ -30,7 +30,12 @@ class Creature:
         self.name = ""
         self.hp_limit = 5
         self.fullness = 100.0
-
+        self.badges = set()
+        self.zones_visited = set()
+        self.swims = 0
+        self.ktn = 0
+        
+        
 class Object:
     def __init__(self, x, y, icon, color, name = "", description = "", cost=0):
         self.icon = icon
@@ -98,12 +103,69 @@ test_os = [Object(8, 5, "?", 0)]
 assert(no_objects_between(test_c, test_t, test_os, True, False) == True)
 # ________________________|
 
+def slope(x1, y1, x2, y2):
+    dx = x2 - x1 
+    dy = y2 - y1
+    return dy/dx
+    
+def yintercept(x, y, slope):
+    return (-slope * x) + y
+    
+print(yintercept(10, 10, (3/6)))
+
+def get_sight_line(a, b):
+    s = slope(a.x, a.y, b.x, b.y)
+    yint = yintercept(b.x, b.y, s)
+    sight_line = lambda x: (s*x)+yint
+    return sight_line
+    
+# def get_possible_fuzzies(x, y, endy):
+    # results = []
+    # for possible_y in range(y, endy, 1)
+    
+# def line_intersect(Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2):
+    # """ returns a (x, y) tuple or None if there is no intersection """
+    # d = (By2 - By1) * (Ax2 - Ax1) - (Bx2 - Bx1) * (Ay2 - Ay1)
+    # if d:
+        # uA = ((Bx2 - Bx1) * (Ay1 - By1) - (By2 - By1) * (Ax1 - Bx1)) / d
+        # uB = ((Ax2 - Ax1) * (Ay1 - By1) - (Ay2 - Ay1) * (Ax1 - Bx1)) / d
+    # else:
+        # return
+    # if not(0 <= uA <= 1 and 0 <= uB <= 1):
+        # return
+    # x = Ax1 + uA * (Ax2 - Ax1)
+    # y = Ay1 + uA * (Ay2 - Ay1)
+ 
+    # return x, y    
+
+def is_visible2(a, b, m):
+    visible = False
+    open_tiles = [0,2,3,4,7,9,10]
+    visible = lambda l: len(set(l) - set(open_tiles)) == 0
+    
+    if a.x == b.x or a.y == b.y:
+        visible = True
+    else:        
+        sight_line = get_sight_line(a, b)
+        low, high = sorted([a.x, b.x])
+        cs = [(x, int(sight_line(x))) for x in range(low,high)]
+        
+        # map over cs and get the map tiles at those coordinates
+        tiles_between = set(map(lambda c: m[c[1]][c[0]], cs))
+        #for x,y in cs:
+            #m[int(y)][int(x)] = 9
+        return visible(tiles_between)  
+        
+    # Figure out which is smaller, a.x or b.x
+    # loop over all the x values from low to high:
+        # Change the map at y, x to be some kind of test sight tile
+        
 def can_see(m, c, t ,os):
     def is_visible_(m, n1, n2, f):
     
-        open_tiles = [0,2,3,4,7,10]
+        open_tiles = [0,2,3,4,7,9,10]
         #open_tiles = filter(lambda tt: tiles[tt][2], tiles)
-        visible = lambda l: len(set(l) - set(open_tiles)) == 0
+        
 
         start, end = ordered(n1, n2)
         tiles_between = [f(n,m) for n in range(start, end + 1)]
@@ -113,10 +175,11 @@ def can_see(m, c, t ,os):
         return False
     
     if t.invisibility_timer == 0:
-        if c.x == t.x:
-            return is_visible_(m, c.y, t.y, lambda n,m: m[n][c.x]) and no_objects_between(c,t,os,on_x=True)
-        elif c.y == t.y:
-            return is_visible_(m, c.x, t.x, lambda n,m: m[c.y][n]) and no_objects_between(c,t,os,on_y=True)
+        return is_visible2(c, t, m)
+        #if c.x == t.x:
+            #return is_visible_(m, c.y, t.y, lambda n,m: m[n][c.x]) and no_objects_between(c,t,os,on_x=True)
+        #elif c.y == t.y:
+            #return is_visible_(m, c.x, t.x, lambda n,m: m[c.y][n]) and no_objects_between(c,t,os,on_y=True)
     else:
         return False
 
@@ -240,8 +303,9 @@ def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_c
         write(world, "world")
         player.hp = 0
         globals.death = "you quit"
-    elif inp == ord('m'):
-        pass
+    elif inp == ord('t'):
+        player.x = randint(0, len(m[1]))
+        player.y = randint(0, len(m))
     elif inp in map(lambda n: ord(str(n)), range(0, 10)):
         selected_number = inp - 49
         cur_inv = player.inventory[selected_number]
@@ -264,6 +328,9 @@ def keyboard_input(inp, player, m, cs, objects, screen, global_objects, global_c
         trap = Object(player.x, player.y, "'", 3, "a trap", "it's a trap!")
         objects.append(trap)
         global_objects.append(trap)
+        
+    elif inp == ord('B'):
+        display.display_badges(screen, player.badges)
     if player.stun_timer == 0:
         attempt_move(player, m, xmod, ymod, cs,objects)
     collision_type(player, ["a trap"], objects, objects, global_objects, cs, global_cs, m, trap_effect)
@@ -315,8 +382,9 @@ def trap_effect(t, player, objects, global_objects, world, cs, global_cs):
     global_objects.remove(t)
     player.stun_timer = randint(2, 4)
     
+    
 def pick_up(t, player, objects, global_objects, world, cs, global_cs):
-    news.append("you collected " + t.name)
+    globals.news.append("you collected " + t.name)
     objects.remove(t)
     global_objects.remove(t)
     if t.icon == "$":
@@ -335,6 +403,7 @@ def kill_v(v, player, objects, global_objects, m, cs, global_cs):
     loot = spawn_thing(loot, m, v.x - 1, v.x + 1, v.y - 1, v.y + 1)
     objects.append(loot)
     global_objects.append(loot) 
+    player.ktn += 1 
     for x in range(2):
         guard = Creature(0, 0, "g", 5, mode="wander")
         guard = spawn_thing(guard, m, player.x - 30, player.x + 30, player.y - 30, player.y + 30)
@@ -345,18 +414,19 @@ def kill_v(v, player, objects, global_objects, m, cs, global_cs):
         global_objects.append(coin)
         trap = Object(0, 0, "'", 3, "a trap", "it's a trap!")
         trap = spawn_thing(trap, m, player.x - 10, player.x + 10, player.y - 10, player.y + 10)
-        pit_trap_setup(trap, m, tiles)
+        pit_trap_setup(trap, m, display.tiles)
         objects.append(trap)
         global_objects.append(trap)
         
 def shark(map, creatures):
     for x in creatures:
-        if x.icon == "g" and under_color(x, map) == 12:
+        if x.icon == "g" and mapgen.under_color(x, map) == 12:
             x.icon = "^"
                     
 def swim(map, player):
     if player.stun_timer == 0:
         player.stun_timer = 2
+    player.swims += 1
 
 def stuff_breaks(player):
     for x in list(map(lambda x: x.name, filter(lambda x: x.hp == 0, player.inventory))):
@@ -372,5 +442,5 @@ def die(m, player, global_objects, global_cs, atlas, screen, highscores):
     highscores.sort(key=lambda x: x[2])
     highscores.reverse()
     highscores = highscores[:10]
-    display_death(screen, highscores)
+    #display_death(screen, highscores)
     write(highscores, "highscores")
