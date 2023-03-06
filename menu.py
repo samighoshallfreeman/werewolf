@@ -39,7 +39,7 @@ def warning(screen):
         
         key = screen.getch()
         a_row = arrow(a_row, key, 1, 7)
-    return 1 if a_row == 7 else 0
+    return 1 if a_row == 7 else 2
 def write_cool_word(s, x, y, screen):
     w = figlet_format(s, font="tombstone")
     w = w.split("\n")

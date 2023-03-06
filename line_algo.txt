@@ -1,0 +1,10 @@
+* Initialize list of coordinates to check for obstructions
+
+* 1,1 on the grid is the center of the game grid at [1][1]
+* Step along f(x), increasing by one until you hit the destination x
+	* For all possible fuzzy ys (ys between enemy and player):
+		* Check distance between grid center at possible_fuzzy_y, x
+			* Do this by checking the intersection between the sight line and f(x) = possible_fuzzy_y
+		* if the distance < 0.3 (or whatever), include it in our list of grid spots to check for obstructions
+* If no obstructions in list of coordinates, return true!
+* Else, false

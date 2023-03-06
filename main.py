@@ -8,8 +8,10 @@ from mapgen import village, gen_objects, build_world, under_color
 import mapgen
 
 import globals
-from items import make_item, items
+from items import make_item, items, amazon_effect
+import items
 from menu import do_menu
+from acheivements import badge_check2
 
     
 def make_world():
@@ -28,6 +30,7 @@ def make_world():
     
     globals.news.append("WELCOME TO WEREWOLF")
     
+    
     return (m, player, objects, cs, atlas, 0, [])
     
 def zone_change_check(player, objects, cs, zx,zy, global_objects, global_cs):
@@ -38,6 +41,7 @@ def zone_change_check(player, objects, cs, zx,zy, global_objects, global_cs):
         cs = get_local(new_zx, new_zy, global_cs)
         zx = new_zx
         zy = new_zy
+        player.zones_visited.add((zx, zy))
     return objects, cs, zx, zy
 
 def initialize(screen, world):
@@ -57,7 +61,6 @@ def initialize(screen, world):
         player = Creature(mapgen.ZONE_LENGTH, mapgen.ZONE_LENGTH, "w", 14, 3, "werewolf")
         
         global_cs += [player]
-    player.inventory = [make_item("an axe")]
     zx = rounds(mapgen.ZONE_LENGTH, player.x)
     zy = rounds(mapgen.ZONE_LENGTH, player.y)
     objects = get_local(zx, zy, global_objects)
@@ -69,6 +72,9 @@ def initialize(screen, world):
 def update_world(player, cs, objects, m):
     if m[player.x][player.y] == 4:    
             swim(m,player)
+    else:
+        player.swims = 0
+        
     for c in cs:
         if c.stun_timer == 0 and distance(c, player) <= CAM_WIDTH:
             if c.icon == "v":
@@ -92,12 +98,14 @@ def update_world(player, cs, objects, m):
         globals.death = "you died of starvation"
         player.hp = 0
     stuff_breaks(player)
+    
+    badge_check2(player)
 
 def main(screen, world):
     world, clock, inp, zx, zy, cs, objects, highscores = initialize(screen, world)
     m, player, global_objects, global_cs, atlas, globals.time_alive, globals.news = world
     player.inventory.append(make_item("a chest"))
-    player.inventory.append(make_item("an arrow"))
+    player.inventory.append(make_item("amazon"))
     while(True):
         
         
@@ -137,7 +145,8 @@ def main(screen, world):
         
         if clock >= 400:
             clock = 0
-        globals.news.append(str(player.stun_timer))
+        if clock >= 200:
+            player.ktn = 0
 def hack(screen):
     if do_menu(screen) == 1:
         world = read("world")
@@ -146,5 +155,19 @@ def hack(screen):
     write(world, "world")
     main(screen, world)
 
+class Bork:
+    pass
 
-curses.wrapper(hack)    
+def hack_amazon(screen):
+    player = Bork()
+    player.gold = 6
+    player.inventory = []
+    amazon_effect(player, None, None, None, None, screen, None, None)
+    
+def hack_whatkey(screen):
+    foo = screen.getch()
+    screen.addstr(0,0,str(foo),0)
+    screen.getch()
+
+#curses.wrapper(hack)    
+curses.wrapper(hack)

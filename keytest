@@ -1,0 +1,8 @@
+import curses
+
+def main(s):
+	n = s.getch()
+	return n
+
+n = curses.wrapper(main)	
+print(n)

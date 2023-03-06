@@ -1,10 +1,11 @@
 import curses
 from globals import MAP_HEIGHT, MAP_WIDTH, CAM_WIDTH, CAM_HEIGHT
-from random import randint
+from random import randint, choice
 import numpy as np
 from misc import irounds
 import globals
 import invlib
+import acheivements as ach
 
 tiles = {0: (".",0, True),
          1: ("#",2, False),
@@ -186,6 +187,17 @@ def change_colors(player, clock):
         player.icon = "@"
         player.color = 1
         player.original_color = 1
+        
+        
+def addstr_t(screen, y, x, s, color):
+    for cx in range(len(s)):
+        if s[cx] != " ":
+            screen.addstr(y, x + cx, s[cx], curses.color_pair(color))
+
+def draw_layers(screen, x, y, ls):
+    for l,color in ls:
+        for row in range(len(l)):
+            addstr_t(screen, y + row, x, l[row], color)
 
 def display_store(cur_row, a_row, screen, buyer, seller, msg):
     # arrow
@@ -338,6 +350,25 @@ def on_cam(t, cam_x, cam_y):
         if t.x > cam_x and t.y > cam_y:
             return True
     return False
+def display_badges(screen, badges):
+    #init_colors()
+    screen.clear()
+    screen.addstr(0, 0, "Badges:",  curses.color_pair(21)) 
+    num_badges = 0
+    for b in ach.badges:
+        if b.name not in badges :
+            bap = ach.gray_badge(b.appearance)
+        else:
+            bap = b.appearance
+        draw_layers(screen, 20 * num_badges, 3, bap)
+        # side_color = 21 if b.name in badges else 0
+        # middle_color = b.color if b.name in badges else 0
+        # screen.addstr(3, 8 * num_badges, "\  /", curses.color_pair(side_color))
+        # screen.addstr(3, 8 * num_badges + 1, b.appearance, curses.color_pair(middle_color))
+        num_badges += 1
+    
+    screen.refresh()
+    screen.getch()
     
 def display_calls(screen, atlas, player, news, clock, cs, cam_x, cam_y):
     for c in cs:

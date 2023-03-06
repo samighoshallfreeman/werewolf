@@ -159,7 +159,62 @@ def wood_effect(player, creatures, m, objects, global_objects, screen, global_cs
     player.inventory.remove(self)
 
 def chest_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
-    display.chest_screen(screen, self, player)    
+    display.chest_screen(screen, self, player)  
+
+def teleport_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
+    cam_y = player.y - int(CAM_HEIGHT / 2)
+    cam_x = player.x - int(CAM_WIDTH / 2)
+    x = player.x - cam_x
+    y = player.y - cam_y
+    screen.addstr(1, 1, "Were would you like to teleport")
+    screen.addstr(y - 1, x, "^", curses.color_pair(0))
+    screen.addstr(y + 1, x, "V", curses.color_pair(0))
+    screen.addstr(y, x + 1, ">", curses.color_pair(0))
+    screen.addstr(y, x - 1, "<", curses.color_pair(0))
+    inp = screen.getch() 
+    if inp == curses.KEY_DOWN:
+        player.y += 100
+    elif inp == curses.KEY_UP:
+        player.y -= 100
+    elif inp == curses.KEY_LEFT:
+        player.x -= 100
+    elif inp == curses.KEY_RIGHT:        
+        player.x += 100    
+        
+def amazon_effect(player, creatures, m, objects, global_objects, screen, global_cs, self):
+    string = ""
+    matches = []
+    screen.addstr(1, 1, "What would you like to buy")
+    
+    while(True):
+        screen.refresh()
+        inp = screen.getch()
+        ci = chr(inp)
+        screen.clear()
+        screen.addstr(1, 1, "What would you like to buy")
+        if ci.lower() in "abcdefghijklmnopqrstuvwxyz ": 
+            string += ci
+        elif inp == 8:
+            # Set =string = all of the characters in string except the last one
+            string = string[0:len(string) - 1]
+        elif ci in "123456789" and int(ci) <= len(matches):
+            key = matches[int(ci) - 1]
+            selected = items[key]
+            if selected[3] <= player.gold:
+                player.inventory.append(make_item(key))
+                player.gold -= selected[3]
+                break
+            
+        screen.addstr(2, 1, string)
+        matches = list(filter(lambda name: string in name, items.keys()))
+        y = 4
+        for match in matches:
+            cost = str(items[match][3] + 1)
+            screen.addstr(y, 1, "%d: %s %s - %s cost "%(y - 3, items[match][1], match, cost))
+            y += 1
+        
+           
+        
         
 items =   { "a healing potion": (healing_potion_effect, "8", 13, 5)
           , "a speed potion": (speed_potion_effect, "8", 13, 4)
@@ -173,6 +228,8 @@ items =   { "a healing potion": (healing_potion_effect, "8", 13, 5)
           , "an axe": (axe_effect, "p", 1, 5)
           , "a piece of wood": (wood_effect, "=", 2, 3)
           , "a chest": (chest_effect, "=", 21, 6)
+          , "a teleporter" : (teleport_effect, "X", 21, 10)
+          , "amazon": (amazon_effect, "a", 0, 7) 
           } 
           
 def make_item(name, x=0, y=0):
